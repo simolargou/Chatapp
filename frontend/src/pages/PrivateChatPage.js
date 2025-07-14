@@ -9,7 +9,7 @@ import AudioPlayer from '../components/AudioPlayer';
 export default function PrivateChatPage() {
   const { username: toUsername } = useParams();
   const navigate = useNavigate();
-  const currentUser = JSON.parse(localStorage.getItem('user'));
+  const [currentUser] = useState(() => JSON.parse(localStorage.getItem('user')));
   const [conversation, setConversation] = useState(null);
   const [currentMessage, setCurrentMessage] = useState('');
   const messagesEndRef = useRef(null);
@@ -41,7 +41,7 @@ export default function PrivateChatPage() {
       socket.off('privateChatStarted', handleStarted);
       socket.off('privateChatError',   handleError);
     };
-  }, [toUsername, currentUser.id, navigate]);
+  }, [toUsername, currentUser, navigate]);
 
 
   useEffect(() => {
@@ -107,7 +107,7 @@ export default function PrivateChatPage() {
   }
 
   return (
-    <div className="flex flex-col h-screen text-black bg-black font-tektur">
+    <div className="flex flex-col h-screen text-black bg-black ">
       <header className="p-4 bg-white flex items-center border-b-2 border-darkgreen">
         <Link to="/chat" className="p-2 mr-4 rounded-full hover:bg-red-500 cursor-pointer">←</Link>
         <h1 className="text-xl font-bold">Chat with {toUsername}</h1>

@@ -14,7 +14,7 @@ module.exports = {
         'life': '#22ad45ff',
       },
       fontFamily: {
-        tektur: ['Tektur', 'sans-serif'],
+        sans: ['Tektur', 'sans-serif'],
       },
       keyframes: {
         glow: {

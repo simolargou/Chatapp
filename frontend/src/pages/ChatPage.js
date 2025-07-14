@@ -9,10 +9,8 @@ export default function ChatPage() {
   const [currentMessage, setCurrentMessage] = useState('');
   const [sidebarOpen, setSidebarOpen]       = useState(false);
   const [onlineUsers, setOnlineUsers]       = useState([]);
-  const currentUser = JSON.parse(localStorage.getItem('user'));
+  const [currentUser] = useState(() => JSON.parse(localStorage.getItem('user')));
   const endRef      = useRef(null);
-
- 
   const audioRef = useRef(null);
 
   useEffect(() => {
@@ -52,7 +50,7 @@ export default function ChatPage() {
       socket.off('getOnlineUsers');
       socket.off('receivePublicMessage', handleNew);
     };
-  }, [currentUser.id]);
+  }, [currentUser]);
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -85,26 +83,26 @@ export default function ChatPage() {
   };
 
   return (
-    <div className="flex h-screen bg-darkgreen text-lime overflow-hidden">
+    <div className="flex h-screen bg-darkgreen text-lime ">
 
 
       <audio ref={audioRef} src="/sounds/notification.mp3" preload="auto" />
 
 
       <aside className={`
-        fixed inset-y-0 left-0 z-20 w-1/8 bg-black p-4 flex flex-col
+        fixed inset-y-0 left-0 z-20 w-72 bg-black p-4 flex flex-col 
         transform transition-transform duration-300 ease-in-out
         ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
         md:relative md:translate-x-0 md:flex-shrink-0
       `}>
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-2xl font-tektur">Now Online ({onlineUsers.length})</h2>
+          <h2 className="text-2xl ">Now Online ({onlineUsers.length})</h2>
           <button onClick={() => setSidebarOpen(false)} className="md:hidden border-2 rounded-full p-2 ml-2 mt-2">✕</button>
         </div>
 
         <ul className="flex-grow overflow-y-auto space-y-2 border-t border-litegreen pt-4">
           {onlineUsers.filter(u => u.id !== currentUser.id).length === 0 && (
-            <li className="text-center text-gray-400 font-tektur">No users online.</li>
+            <li className="text-center text-gray-400 ">No users online.</li>
           )}
           {onlineUsers
             .filter(u => u.id !== currentUser.id)
@@ -112,7 +110,7 @@ export default function ChatPage() {
               <li key={u.id}>
                 <Link
                   to={`/chat/${u.username}`}
-                  className="block w-full text-center font-tektur text-xl rounded-full text-white font-bold hover:bg-life mb-2 rounded bg-darkgreen animate-glow"
+                  className="block w-full text-center text-xl rounded-full text-white font-bold hover:bg-life mb-2  bg-darkgreen animate-glow"
                 >
                   {u.username}
                 </Link>
@@ -120,7 +118,7 @@ export default function ChatPage() {
             ))
           }
         </ul>
-        <div className='flex-row flex font-tektur'>
+        <div className='flex-row flex'>
           <h1 className='w-1/2 cursor-pointer underline'>Log out</h1>
           <button onClick={logout}
                   className="w-1/2 p-2 bg-orange-500 text-white font-bold py-2 rounded-full hover:bg-red-600">
@@ -130,7 +128,7 @@ export default function ChatPage() {
       </aside>
 
   
-      <main className="flex flex-1 flex-col bg-lime md:ml-64">
+      <main className="flex flex-1 flex-col bg-lime ">
 
 
         <div className="md:hidden h-1/8 flex items-center p-2 bg-green border-b-2 border-darkgreen">
@@ -138,11 +136,11 @@ export default function ChatPage() {
             <button onClick={() => setSidebarOpen(true)} className="mr-2">☰</button>
           </div>
           <div className=''>
-             <h1 className="text-5xl font-bold font-tektur cursor-pointer">XChat</h1>
+             <h1 className="text-5xl font-bold cursor-pointer">XChat</h1>
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-2 font-tektur">
+        <div className="flex-1 overflow-y-auto p-2">
           {messages.map(msg => (
             <div
               key={msg._id}
