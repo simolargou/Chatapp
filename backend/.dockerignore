@@ -1,0 +1,14 @@
+node_modules
+.env
+.env.*
+npm-debug.log
+.DS_Store
+.vscode
+.idea
+*.log
+*.swp
+*.swo
+coverage
+__tests__/
+*.test.js
+*.spec.js

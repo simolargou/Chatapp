@@ -1,5 +1,3 @@
-
-
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { socket } from '../socket';
@@ -14,18 +12,23 @@ export default function PrivateChatPage() {
   const [currentMessage, setCurrentMessage] = useState('');
   const messagesEndRef = useRef(null);
 
+  // === AUDIO CALL STATE ===
+  const [callState, setCallState] = useState("idle"); // idle | calling | ringing | in-call
+  const [incomingCaller, setIncomingCaller] = useState(null);
+  const [remoteStream, setRemoteStream] = useState(null);
+  const localStreamRef = useRef(null);
+  const peerConnectionRef = useRef(null);
 
+  // ==== SIGNALING HANDLERS (Socket.IO) ====
   useEffect(() => {
     if (!currentUser?.id) return;
 
- 
     socket.connect(currentUser);
     socket.emit('startPrivateChat', {
       fromUserId: currentUser.id,
       toUsername
     });
 
-  
     const handleStarted = (convo) => {
       setConversation(convo);
     };
@@ -35,14 +38,49 @@ export default function PrivateChatPage() {
     };
 
     socket.on('privateChatStarted', handleStarted);
-    socket.on('privateChatError',   handleError);
+    socket.on('privateChatError', handleError);
+
+    // ---- AUDIO CALL: Incoming offer ----
+    socket.on('audio-call-offer', async ({ from, offer }) => {
+      setIncomingCaller(from);
+      setCallState("ringing");
+      window.offerData = offer; // For acceptCall
+    });
+
+    // ---- AUDIO CALL: Incoming answer ----
+    socket.on('audio-call-answer', async ({ answer }) => {
+      if (peerConnectionRef.current) {
+        await peerConnectionRef.current.setRemoteDescription(answer);
+        setCallState("in-call");
+      }
+    });
+
+    // ---- AUDIO CALL: Incoming ICE ----
+    socket.on('audio-call-ice', async ({ candidate }) => {
+      if (peerConnectionRef.current && candidate) {
+        try {
+          await peerConnectionRef.current.addIceCandidate(candidate);
+        } catch (err) {
+          // Ignore duplicates
+        }
+      }
+    });
+
+    // ---- AUDIO CALL: Ended ----
+    socket.on('audio-call-ended', () => {
+      cleanupCall();
+    });
 
     return () => {
       socket.off('privateChatStarted', handleStarted);
-      socket.off('privateChatError',   handleError);
+      socket.off('privateChatError', handleError);
+      socket.off('audio-call-offer');
+      socket.off('audio-call-answer');
+      socket.off('audio-call-ice');
+      socket.off('audio-call-ended');
     };
+    // eslint-disable-next-line
   }, [toUsername, currentUser, navigate]);
-
 
   useEffect(() => {
     const handlePm = ({ conversationId, message }) => {
@@ -60,12 +98,11 @@ export default function PrivateChatPage() {
     };
   }, []);
 
-
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [conversation?.messages]);
 
-
+  // ==== CHAT MESSAGE SENDING ====
   const sendMessage = ({ messageType, text, audioUrl }) => {
     if (!conversation) return;
     socket.emit('sendPrivateMessage', {
@@ -93,25 +130,172 @@ export default function PrivateChatPage() {
   };
   const handleSendAudio = audioUrl => sendMessage({ messageType: 'audio', text: null, audioUrl });
 
+  // ==== AUDIO CALL LOGIC ====
+  const startCall = async () => {
+    setCallState("calling");
+    // 1. Get local audio
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    localStreamRef.current = stream;
+
+    // 2. Create PeerConnection
+    const pc = createPeerConnection();
+    peerConnectionRef.current = pc;
+
+    // 3. Add audio track
+    stream.getTracks().forEach(track => pc.addTrack(track, stream));
+
+    // 4. Create offer
+    const offer = await pc.createOffer();
+    await pc.setLocalDescription(offer);
+
+    // 5. Send offer via Socket.IO
+    socket.emit('audio-call-offer', {
+      to: toUsername,
+      offer,
+      from: currentUser.username
+    });
+  };
+
+  // Accept incoming call
+  const acceptCall = async () => {
+    setCallState("in-call");
+    // 1. Get local audio
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    localStreamRef.current = stream;
+
+    // 2. Create PeerConnection
+    const pc = createPeerConnection();
+    peerConnectionRef.current = pc;
+
+    // 3. Add audio track
+    stream.getTracks().forEach(track => pc.addTrack(track, stream));
+
+    // 4. Set remote offer from caller
+    await pc.setRemoteDescription(window.offerData);
+
+    // 5. Create answer
+    const answer = await pc.createAnswer();
+    await pc.setLocalDescription(answer);
+
+    // 6. Send answer back to caller
+    socket.emit('audio-call-answer', {
+      to: incomingCaller,
+      answer,
+      from: currentUser.username
+    });
+    setIncomingCaller(null);
+  };
+
+  // Decline incoming call
+  const declineCall = () => {
+    setCallState("idle");
+    setIncomingCaller(null);
+    window.offerData = null;
+    socket.emit('audio-call-ended', { to: incomingCaller, from: currentUser.username });
+  };
+
+  // End call
+  const endCall = () => {
+    cleanupCall();
+    // Notify peer
+    socket.emit('audio-call-ended', { to: toUsername, from: currentUser.username });
+  };
+
+  // PeerConnection setup
+  function createPeerConnection() {
+    const pc = new RTCPeerConnection({
+      iceServers: [
+        { urls: 'stun:stun.l.google.com:19302' }
+      ]
+    });
+    pc.onicecandidate = event => {
+      if (event.candidate) {
+        socket.emit('audio-call-ice', {
+          to: callState === 'calling' ? toUsername : incomingCaller,
+          candidate: event.candidate,
+          from: currentUser.username
+        });
+      }
+    };
+    pc.ontrack = event => {
+      setRemoteStream(event.streams[0]);
+    };
+    return pc;
+  }
+
+  
+  function cleanupCall() {
+    setCallState("idle");
+    setRemoteStream(null);
+    if (peerConnectionRef.current) {
+      peerConnectionRef.current.close();
+      peerConnectionRef.current = null;
+    }
+    if (localStreamRef.current) {
+      localStreamRef.current.getTracks().forEach(track => track.stop());
+      localStreamRef.current = null;
+    }
+    setIncomingCaller(null);
+    window.offerData = null;
+  }
 
   if (!conversation) {
-   return (
-  <div className="flex items-center justify-center h-screen bg-gray-100">
-    <div className="flex flex-col items-center space-y-4 p-6 bg-white rounded-2xl shadow-md animate-pulse">
-      <div className="w-12 h-12 border-4 border-lime-500 border-t-transparent rounded-full animate-spin" />
-      <p className="text-lime-600 font-semibold text-lg">{toUsername} Loading...</p>
-    </div>
-  </div>
-);
-
+    return (
+      <div className="flex items-center justify-center h-screen bg-gray-100">
+        <div className="flex flex-col items-center space-y-4 p-6 bg-white rounded-2xl shadow-md animate-pulse">
+          <div className="w-12 h-12 border-4 border-lime-500 border-t-transparent rounded-full animate-spin" />
+          <p className="text-lime-600 font-semibold text-lg">{toUsername} Loading...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="flex flex-col h-screen text-black bg-black ">
+    <div className="flex flex-col h-screen text-black bg-black">
       <header className="p-4 bg-white flex items-center border-b-2 border-darkgreen">
-        <Link to="/chat" className="p-2 mr-4 rounded-full hover:bg-red-500 cursor-pointer">←</Link>
+        <Link to="/chat" className="p-2 mr-4 rounded-full hover:bg-black cursor-pointer">←</Link>
         <h1 className="text-xl font-bold">Chat with {toUsername}</h1>
+        {callState === "idle" && (
+          <button
+            className="ml-auto px-3 py-1  text-white rounded "
+            onClick={startCall}
+          >
+            📞 
+          </button>
+        )}
+        {callState === "calling" && (
+          <span className="ml-auto text-blue-red-800">Calling...</span>
+        )}
+        {callState === "in-call" && (
+          <button
+            className="ml-auto px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700"
+            onClick={endCall}
+          >
+            🔴 End Call
+          </button>
+        )}
       </header>
+
+      {/* Incoming Call UI */}
+      {callState === "ringing" && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-70 z-50">
+          <div className="bg-white p-8 rounded-lg shadow-lg flex flex-col items-center">
+            <p className="mb-4 text-lg font-bold">Incoming call from {incomingCaller}</p>
+            <button className="mb-2 px-4 py-2 bg-life text-white rounded" onClick={acceptCall}>Accept</button>
+            <button className="px-4 py-2 bg-red-500 text-white rounded" onClick={declineCall}>Decline</button>
+          </div>
+        </div>
+      )}
+
+      {/* In-call audio element */}
+      {callState === "in-call" && remoteStream && (
+        <audio
+          autoPlay
+          ref={audio => {
+            if (audio && remoteStream) audio.srcObject = remoteStream;
+          }}
+        />
+      )}
 
       <div className="flex-grow p-4 overflow-y-auto">
         {conversation.messages.map((msg, idx) => (

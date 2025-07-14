@@ -5,7 +5,7 @@
 **/*.log
 
 # Environment variables
-**/.env
+*.env*
 
 # Build files
 frontend/dist
@@ -14,3 +14,5 @@ frontend/build
 # OS junk
 .DS_Store
 Thumbs.db
+.
+.history/

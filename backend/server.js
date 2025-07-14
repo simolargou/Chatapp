@@ -1,4 +1,4 @@
-// backend/server.js
+
 
 require('dotenv').config();
 const express    = require('express');
@@ -10,20 +10,16 @@ const path       = require('path');
 const fs         = require('fs');
 const multer     = require('multer');
 
-
 console.log('🛠️  Using MONGO_URI:', process.env.MONGO_URI);
-
 
 const User         = require('./models/User');
 const Message      = require('./models/Message');
 const Conversation = require('./models/Conversation');
 
-
 const app    = express();
 const server = http.createServer(app);
 app.use(cors());
 app.use(express.json());
-
 
 const uploadsDir = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir);
@@ -37,13 +33,11 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 app.use('/uploads', express.static(uploadsDir));
 
-
 app.use('/api/auth', require('./routes/auth'));
 app.post('/api/upload/audio', upload.single('audio'), (req, res) => {
   if (!req.file) return res.status(400).json({ error:'No file uploaded.' });
   res.json({ audioUrl: `/uploads/${req.file.filename}` });
 });
-
 
 app.get('/api/messages/public', async (req,res) => {
   try {
@@ -56,7 +50,6 @@ app.get('/api/messages/public', async (req,res) => {
     res.status(500).json({ error:'Server error' });
   }
 });
-
 
 mongoose.set('debug', true);
 mongoose.connect(process.env.MONGO_URI)
@@ -77,7 +70,6 @@ let onlineUsers = {};
 io.on('connection', socket => {
   console.log('🔌 Socket connected:', socket.id);
 
-
   socket.on('userOnline', user => {
     if (!user?.id) return;
     socket.auth = { user };
@@ -86,7 +78,6 @@ io.on('connection', socket => {
       Object.entries(onlineUsers).map(([id,u])=>({id,username:u.username}))
     );
   });
-
 
   socket.on('disconnect', () => {
     const u = socket.auth?.user;
@@ -111,7 +102,6 @@ io.on('connection', socket => {
       socket.emit('publicHistory', []);
     }
   });
-
 
   socket.on('sendPublicMessage', async data => {
     const authorId = socket.auth?.user?.id || data.author;
@@ -143,7 +133,6 @@ io.on('connection', socket => {
       console.error('❌ Error saving public message:', err);
     }
   });
-
 
   socket.on('startPrivateChat', async ({fromUserId,toUsername}) => {
     console.log('→ startPrivateChat:', fromUserId, toUsername);
@@ -195,6 +184,41 @@ io.on('connection', socket => {
       }
     } catch(err) {
       console.error('❌ sendPrivateMessage error:', err);
+    }
+  });
+  
+  function getUserIdByUsername(username) {
+    for (const id in onlineUsers) {
+      if (onlineUsers[id].username === username) return id;
+    }
+    return null;
+  }
+
+  socket.on('audio-call-offer', ({ to, offer, from }) => {
+    const recipientId = getUserIdByUsername(to);
+    if (recipientId && onlineUsers[recipientId]) {
+      io.to(onlineUsers[recipientId].socketId).emit('audio-call-offer', { from, offer });
+    }
+  });
+
+  socket.on('audio-call-answer', ({ to, answer, from }) => {
+    const recipientId = getUserIdByUsername(to);
+    if (recipientId && onlineUsers[recipientId]) {
+      io.to(onlineUsers[recipientId].socketId).emit('audio-call-answer', { from, answer });
+    }
+  });
+
+  socket.on('audio-call-ice', ({ to, candidate, from }) => {
+    const recipientId = getUserIdByUsername(to);
+    if (recipientId && onlineUsers[recipientId]) {
+      io.to(onlineUsers[recipientId].socketId).emit('audio-call-ice', { from, candidate });
+    }
+  });
+
+  socket.on('audio-call-ended', ({ to, from }) => {
+    const recipientId = getUserIdByUsername(to);
+    if (recipientId && onlineUsers[recipientId]) {
+      io.to(onlineUsers[recipientId].socketId).emit('audio-call-ended', { from });
     }
   });
 
