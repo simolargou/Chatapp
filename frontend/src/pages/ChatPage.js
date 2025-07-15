@@ -5,6 +5,9 @@ import Recorder from '../components/Recorder';
 import AudioPlayer from '../components/AudioPlayer';
 import logo from '../assets/logo.png';
 import defaultAvatar from '../assets/avatar.png';
+import SimolifeModal from "../components/SimolifeModal";
+import SimolifeVideo from "../components/SimolifeVideo";
+
 
 export default function ChatPage() {
   const [messages, setMessages]             = useState([]);
@@ -14,6 +17,10 @@ export default function ChatPage() {
   const [currentUser] = useState(() => JSON.parse(localStorage.getItem('user')));
   const endRef      = useRef(null);
   const audioRef = useRef(null);
+  const [showSimolifeModal, setShowSimolifeModal] = useState(false);
+  const [simolifeActive, setSimolifeActive] = useState(false);
+  const [simolifePeer, setSimolifePeer] = useState(null);
+
 
   useEffect(() => {
     if (!currentUser?.id) return;
@@ -56,6 +63,16 @@ export default function ChatPage() {
   }, [currentUser]);
 
   useEffect(() => {
+      if (currentUser) setShowSimolifeModal(true);
+    }, [currentUser]);
+
+
+  useEffect(() => {
+      socket.on("simolife-matched", ({ peer }) => setSimolifePeer(peer));
+      return () => socket.off("simolife-matched");
+    }, []);
+
+  useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
@@ -78,6 +95,21 @@ export default function ChatPage() {
       audioUrl: url
     });
   };
+  const handleSimolifeAccept = () => {
+      setShowSimolifeModal(false);
+      setSimolifeActive(true);
+      socket.emit("simolife-join", currentUser);
+    };
+    const handleSimolifeDecline = () => setShowSimolifeModal(false);
+    const handleSimolifeNext = () => {
+      socket.emit("simolife-next", currentUser);
+      setSimolifePeer(null);
+    };
+    const handleSimolifeLeave = () => {
+      socket.emit("simolife-leave");
+      setSimolifeActive(false);
+      setSimolifePeer(null);
+    };
 
   const handleDeleteMessage = async (messageId) => {
     try {
@@ -169,6 +201,20 @@ export default function ChatPage() {
           </button>
         </div>
       </aside>
+      <SimolifeModal
+          open={showSimolifeModal}
+          onAccept={handleSimolifeAccept}
+          onDecline={handleSimolifeDecline}
+        />
+        {simolifeActive && (
+          <SimolifeVideo
+            socket={socket}
+            currentUser={currentUser}
+            peer={simolifePeer}
+            onNext={handleSimolifeNext}
+            onLeave={handleSimolifeLeave}
+          />
+        )}
 
       {/* Chat Main */}
       <main className="flex flex-1 flex-col bg-lime ">

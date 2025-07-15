@@ -6,6 +6,7 @@ const mongoose   = require('mongoose');
 const path       = require('path');
 const fs         = require('fs');
 const multer     = require('multer');
+const simolife   = require('./simolife');
 
 const app        = express();
 const server     = http.createServer(app);
@@ -269,6 +270,47 @@ io.on('connection', socket => {
       console.error('❌ sendPrivateMessage error:', err);
     }
   });
+    // --- SIMOLIFE video matching logic ---
+  socket.on('simolife-join', user => {
+    simolife.addUser(socket, user);
+    const pair = simolife.findPair();
+    if (pair) {
+      pair.forEach(u => {
+        io.to(u.socketId).emit('simolife-matched', {
+          peer: pair.find(x => x.socketId !== u.socketId)
+        });
+      });
+    }
+  });
+
+  socket.on('simolife-next', user => {
+    simolife.removeUser(socket);
+    simolife.addUser(socket, user);
+    const pair = simolife.findPair();
+    if (pair) {
+      pair.forEach(u => {
+        io.to(u.socketId).emit('simolife-matched', {
+          peer: pair.find(x => x.socketId !== u.socketId)
+        });
+      });
+    }
+  });
+
+  socket.on('simolife-leave', () => {
+    simolife.removeUser(socket);
+  });
+
+  // ---- WebRTC signaling for Simolife ----
+  socket.on('simolife-offer', data => {
+    io.to(data.to).emit('simolife-offer', { from: socket.id, offer: data.offer });
+  });
+  socket.on('simolife-answer', data => {
+    io.to(data.to).emit('simolife-answer', { from: socket.id, answer: data.answer });
+  });
+  socket.on('simolife-ice', data => {
+    io.to(data.to).emit('simolife-ice', { from: socket.id, candidate: data.candidate });
+  });
+
 
   // Audio-Call Events...
   function getUserIdByUsername(username) {
