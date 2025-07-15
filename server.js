@@ -6,7 +6,6 @@ const mongoose   = require('mongoose');
 const path       = require('path');
 const fs         = require('fs');
 const multer     = require('multer');
-const simolife   = require('./simolife');
 
 const app        = express();
 const server     = http.createServer(app);
@@ -22,7 +21,7 @@ app.use(express.json());
 const uploadsDir = path.join(__dirname, 'uploads');
 // ---- CORS-Header für ALLE Anfragen (vor allen Routern!) ----
 app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', '*'); // Für Prod: deine Domain statt '*'
+  res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS');
   res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   next();
@@ -151,6 +150,17 @@ const io = new Server(server, {
 
 let onlineUsers = {};
 
+// ==== SIMOLIFE (Omegle-Style Video Matching) ====
+let simolifeQueue = [];
+
+function getSocketByUserId(userId) {
+  // Find socket object for userId from io.sockets.sockets
+  for (const [id, s] of io.of('/').sockets) {
+    if (s.auth?.user?.id === userId) return s;
+  }
+  return null;
+}
+
 io.on('connection', socket => {
   console.log('🔌 Socket connected:', socket.id);
 
@@ -170,6 +180,16 @@ io.on('connection', socket => {
       io.emit('getOnlineUsers',
         Object.entries(onlineUsers).map(([id, u]) => ({ id, username: u.username, profilePic: u.profilePic }))
       );
+    }
+    // Remove from simolife queue if active
+    simolifeQueue = simolifeQueue.filter(s => s.id !== socket.id);
+    // Notify peer if matched
+    if (socket.simolifePeer) {
+      let peerSocket = getSocketByUserId(socket.simolifePeer.id);
+      if (peerSocket) {
+        peerSocket.emit('simolife-peer-left');
+        peerSocket.simolifePeer = null;
+      }
     }
   });
 
@@ -270,47 +290,63 @@ io.on('connection', socket => {
       console.error('❌ sendPrivateMessage error:', err);
     }
   });
-    // --- SIMOLIFE video matching logic ---
-  socket.on('simolife-join', user => {
-    simolife.addUser(socket, user);
-    const pair = simolife.findPair();
-    if (pair) {
-      pair.forEach(u => {
-        io.to(u.socketId).emit('simolife-matched', {
-          peer: pair.find(x => x.socketId !== u.socketId)
-        });
-      });
-    }
-  });
 
-  socket.on('simolife-next', user => {
-    simolife.removeUser(socket);
-    simolife.addUser(socket, user);
-    const pair = simolife.findPair();
-    if (pair) {
-      pair.forEach(u => {
-        io.to(u.socketId).emit('simolife-matched', {
-          peer: pair.find(x => x.socketId !== u.socketId)
-        });
-      });
+  // --- SIMOLIFE video matching logic ---
+  socket.on('simolife-join', user => {
+    socket.simolifeActive = true;
+    socket.simolifePeer  = null;
+    // See if anyone else is waiting
+    let peer = simolifeQueue.find(s => s.id !== socket.id && s.simolifeActive && !s.simolifePeer);
+    if (peer) {
+      // Match them!
+      socket.simolifePeer = peer.auth.user;
+      peer.simolifePeer   = socket.auth.user;
+      // Remove both from queue
+      simolifeQueue = simolifeQueue.filter(s => s.id !== peer.id && s.id !== socket.id);
+      // Notify both clients
+      socket.emit('simolife-matched', { peer: peer.auth.user });
+      peer.emit('simolife-matched', { peer: socket.auth.user });
+    } else {
+      simolifeQueue.push(socket);
+      socket.emit('simolife-matched', { peer: null }); // waiting
     }
   });
 
   socket.on('simolife-leave', () => {
-    simolife.removeUser(socket);
+    socket.simolifeActive = false;
+    simolifeQueue = simolifeQueue.filter(s => s.id !== socket.id);
+    if (socket.simolifePeer) {
+      // Notify peer, if exists
+      let peerSocket = getSocketByUserId(socket.simolifePeer.id);
+      if (peerSocket) {
+        peerSocket.emit('simolife-peer-left');
+        peerSocket.simolifePeer = null;
+      }
+      socket.simolifePeer = null;
+    }
   });
 
-  // ---- WebRTC signaling for Simolife ----
-  socket.on('simolife-offer', data => {
-    io.to(data.to).emit('simolife-offer', { from: socket.id, offer: data.offer });
-  });
-  socket.on('simolife-answer', data => {
-    io.to(data.to).emit('simolife-answer', { from: socket.id, answer: data.answer });
-  });
-  socket.on('simolife-ice', data => {
-    io.to(data.to).emit('simolife-ice', { from: socket.id, candidate: data.candidate });
+  socket.on('simolife-next', user => {
+    simolifeQueue = simolifeQueue.filter(s => s.id !== socket.id);
+    socket.simolifePeer = null;
+    // Try to match again
+    socket.emit('simolife-matched', { peer: null });
+    socket.emit('simolife-join', user); // Try again
   });
 
+  // WebRTC Signaling Relays
+  socket.on('simolife-offer',  ({ to, offer }) => {
+    let peerSocket = getSocketByUserId(to.id);
+    if (peerSocket) peerSocket.emit('simolife-offer', { from: socket.auth.user, offer });
+  });
+  socket.on('simolife-answer', ({ to, answer }) => {
+    let peerSocket = getSocketByUserId(to.id);
+    if (peerSocket) peerSocket.emit('simolife-answer', { from: socket.auth.user, answer });
+  });
+  socket.on('simolife-ice',    ({ to, candidate }) => {
+    let peerSocket = getSocketByUserId(to.id);
+    if (peerSocket) peerSocket.emit('simolife-ice', { from: socket.auth.user, candidate });
+  });
 
   // Audio-Call Events...
   function getUserIdByUsername(username) {
