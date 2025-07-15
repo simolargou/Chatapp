@@ -6,89 +6,92 @@ export default function SimolifeVideo({ socket, currentUser, peer, onNext, onLea
   const myStream = useRef(null);
   const peerConnection = useRef(null);
 
-  // --- WebRTC signaling handlers ---
   useEffect(() => {
     if (!peer || !peer.socketId) return;
 
-    // Start local camera/mic
     let isActive = true;
-    async function startMedia() {
+
+    async function initConnection() {
       try {
+        // Hole lokale Kamera/Mikrofon
         myStream.current = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-        if (myVideoRef.current) myVideoRef.current.srcObject = myStream.current;
+        if (myVideoRef.current) {
+          myVideoRef.current.srcObject = myStream.current;
+        }
 
         if (!isActive) return;
 
-        // Setup peer connection
-        peerConnection.current = new window.RTCPeerConnection({
+        // Erstelle neue Peer-Verbindung
+        peerConnection.current = new RTCPeerConnection({
           iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
         });
 
-        // Add own stream tracks to connection
+        // Lokale Tracks hinzufügen
         myStream.current.getTracks().forEach(track => {
           peerConnection.current.addTrack(track, myStream.current);
         });
 
-        // Handle incoming remote stream
+        // Wenn Remote-Stream kommt, anzeigen
         peerConnection.current.ontrack = event => {
           if (peerVideoRef.current) {
             peerVideoRef.current.srcObject = event.streams[0];
           }
         };
 
-        // ICE candidate handler
+        // ICE-Kandidaten senden
         peerConnection.current.onicecandidate = event => {
           if (event.candidate) {
             socket.emit("simolife-ice", { to: peer.socketId, candidate: event.candidate });
           }
         };
 
-        // Listen for offer/answer/ICE
+        // Signaling-Handler
         const handleOffer = async ({ from, offer }) => {
           if (from !== peer.socketId) return;
           await peerConnection.current.setRemoteDescription(new RTCSessionDescription(offer));
           const answer = await peerConnection.current.createAnswer();
           await peerConnection.current.setLocalDescription(answer);
-          socket.emit("simolife-answer", { to: peer.socketId, answer });
+          socket.emit("simolife-answer", { to: from, answer });
         };
+
         const handleAnswer = async ({ from, answer }) => {
           if (from !== peer.socketId) return;
           await peerConnection.current.setRemoteDescription(new RTCSessionDescription(answer));
         };
-        const handleICE = async ({ from, candidate }) => {
-          if (from !== peer.socketId) return;
+
+        const handleIce = async ({ from, candidate }) => {
+          if (from !== peer.socketId || !candidate) return;
           try {
             await peerConnection.current.addIceCandidate(new RTCIceCandidate(candidate));
-          } catch (e) {
-            // ignore error if candidate is null/invalid
+          } catch (err) {
+            console.warn("ICE Error:", err);
           }
         };
 
+        // Events registrieren
         socket.on("simolife-offer", handleOffer);
         socket.on("simolife-answer", handleAnswer);
-        socket.on("simolife-ice", handleICE);
+        socket.on("simolife-ice", handleIce);
 
-        // Decide who creates offer based on socketId
-        if (socket.socket.id < peer.socketId) {
-          // I'm the initiator, create offer
+        // Wer macht das Offer? (der mit kleinerer ID)
+        if (socket.id < peer.socketId) {
           const offer = await peerConnection.current.createOffer();
           await peerConnection.current.setLocalDescription(offer);
           socket.emit("simolife-offer", { to: peer.socketId, offer });
         }
 
-        // Cleanup listeners on unmount
+        // Aufräumen bei Disconnect
         return () => {
           socket.off("simolife-offer", handleOffer);
           socket.off("simolife-answer", handleAnswer);
-          socket.off("simolife-ice", handleICE);
+          socket.off("simolife-ice", handleIce);
         };
-
       } catch (err) {
-        alert("Failed to access camera/mic: " + err.message);
+        alert("⚠️ Kamera/Mikrofon konnte nicht verwendet werden: " + err.message);
       }
     }
 
-    startMedia();
+    initConnection();
 
     return () => {
       isActive = false;
@@ -101,15 +104,12 @@ export default function SimolifeVideo({ socket, currentUser, peer, onNext, onLea
         myStream.current = null;
       }
     };
-    // Only re-run if peer changes!
-    // eslint-disable-next-line
-  }, [peer]);
+  }, [peer, socket]);
 
   return (
     <div className="fixed inset-0 z-50 bg-black bg-opacity-95 flex flex-col items-center justify-center">
-      {/* Vertical videos */}
-      <div className="flex flex-col gap-8 items-center mb-6 w-full max-w-xl">
-        {/* Own video */}
+      <div className="flex flex-col gap-6 items-center mb-6 w-full max-w-xl">
+        {/* Eigene Kamera */}
         <div className="flex flex-col items-center w-full">
           <video
             ref={myVideoRef}
@@ -120,7 +120,8 @@ export default function SimolifeVideo({ socket, currentUser, peer, onNext, onLea
           />
           <span className="text-white mt-1 font-bold text-lg">You</span>
         </div>
-        {/* Peer video */}
+
+        {/* Peer Kamera */}
         <div className="flex flex-col items-center w-full">
           <video
             ref={peerVideoRef}
@@ -131,6 +132,7 @@ export default function SimolifeVideo({ socket, currentUser, peer, onNext, onLea
           <span className="text-white mt-1 font-bold text-lg">Stranger</span>
         </div>
       </div>
+
       <div className="flex gap-4 mt-3">
         <button
           onClick={onNext}
