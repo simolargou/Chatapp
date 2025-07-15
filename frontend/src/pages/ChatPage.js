@@ -10,9 +10,10 @@ import defaultAvatar from '../assets/avatar.png';
 import SimolifeModal from '../components/SimolifeModal';
 import SimolifeContainer from '../components/SimolifeContainer';
 
-export default function ChatPage({ currentUser }) {
+export default function ChatPage() {
   const [messages, setMessages] = useState([]);
   const [currentMessage, setCurrentMessage] = useState('');
+  const currentUser = JSON.parse(localStorage.getItem('user'));
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [onlineUsers, setOnlineUsers] = useState([]);
   const endRef = useRef(null);
