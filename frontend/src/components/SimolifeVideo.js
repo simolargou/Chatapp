@@ -8,29 +8,36 @@ export default function SimolifeVideo({ socket, currentUser, peer, onNext, onLea
   const [status, setStatus] = useState("🔍 Suche nach Partner...");
 
   // Kamera starten
-  useEffect(() => {
-    (async () => {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-        myStream.current = stream;
-        if (myVideoRef.current) {
-          myVideoRef.current.srcObject = stream;
-        }
-        console.log("✅ Kamera/Mikrofon Zugriff erfolgreich");
-      } catch (err) {
-        console.error("❌ Kamera/Mikrofon Fehler:", err);
-        alert("⚠️ Zugriff auf Kamera/Mikrofon nicht möglich: " + err.message);
+ useEffect(() => {
+  (async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      myStream.current = stream;
+      if (myVideoRef.current) {
+        myVideoRef.current.srcObject = stream;
       }
-    })();
+      console.log("✅ Kamera/Mikrofon Zugriff erfolgreich");
 
-    return () => {
-      if (myStream.current) {
-        myStream.current.getTracks().forEach(t => t.stop());
-        myStream.current = null;
+      // 👉️ HIER emit hinzufügen!
+      if (currentUser && socket) {
+        socket.emit("simolife-join", currentUser);
+        console.log("📡 simolife-join gesendet:", currentUser);
       }
-      if (myVideoRef.current) myVideoRef.current.srcObject = null;
-    };
-  }, []);
+
+    } catch (err) {
+      console.error("❌ Kamera/Mikrofon Fehler:", err);
+      alert("⚠️ Zugriff auf Kamera/Mikrofon nicht möglich: " + err.message);
+    }
+  })();
+
+  return () => {
+    if (myStream.current) {
+      myStream.current.getTracks().forEach(t => t.stop());
+      myStream.current = null;
+    }
+    if (myVideoRef.current) myVideoRef.current.srcObject = null;
+  };
+}, []);
 
   // userOnline + simolife-join senden
   useEffect(() => {
