@@ -11,30 +11,30 @@ export default function SimolifeVideo({ socket, currentUser, peer, onNext, onLea
 
     let isActive = true;
 
-    async function initConnection() {
+    const initConnection = async () => {
       try {
-        // Hole lokale Kamera/Mikrofon
-        myStream.current = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        // Anfrage Kamera/Mikrofon
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        myStream.current = stream;
         if (myVideoRef.current) {
-          myVideoRef.current.srcObject = myStream.current;
+          myVideoRef.current.srcObject = stream;
         }
 
-        if (!isActive) return;
-
-        // Erstelle neue Peer-Verbindung
+        // Peer-Verbindung einrichten
         peerConnection.current = new RTCPeerConnection({
           iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
         });
 
-        // Lokale Tracks hinzufügen
-        myStream.current.getTracks().forEach(track => {
-          peerConnection.current.addTrack(track, myStream.current);
+        // Tracks zur Verbindung hinzufügen
+        stream.getTracks().forEach(track => {
+          peerConnection.current.addTrack(track, stream);
         });
 
-        // Wenn Remote-Stream kommt, anzeigen
+        // Remote-Stream anzeigen
         peerConnection.current.ontrack = event => {
-          if (peerVideoRef.current) {
-            peerVideoRef.current.srcObject = event.streams[0];
+          const remoteStream = event.streams[0];
+          if (peerVideoRef.current && remoteStream) {
+            peerVideoRef.current.srcObject = remoteStream;
           }
         };
 
@@ -45,7 +45,7 @@ export default function SimolifeVideo({ socket, currentUser, peer, onNext, onLea
           }
         };
 
-        // Signaling-Handler
+        // Signaling: Event-Handler
         const handleOffer = async ({ from, offer }) => {
           if (from !== peer.socketId) return;
           await peerConnection.current.setRemoteDescription(new RTCSessionDescription(offer));
@@ -64,45 +64,52 @@ export default function SimolifeVideo({ socket, currentUser, peer, onNext, onLea
           try {
             await peerConnection.current.addIceCandidate(new RTCIceCandidate(candidate));
           } catch (err) {
-            console.warn("ICE Error:", err);
+            console.warn("⚠️ ICE-Kandidat konnte nicht hinzugefügt werden:", err);
           }
         };
 
-        // Events registrieren
+        // Events abonnieren
         socket.on("simolife-offer", handleOffer);
         socket.on("simolife-answer", handleAnswer);
         socket.on("simolife-ice", handleIce);
 
-        // Wer macht das Offer? (der mit kleinerer ID)
+        // Der mit kleinerer socketId startet die Verbindung
         if (socket.id < peer.socketId) {
           const offer = await peerConnection.current.createOffer();
           await peerConnection.current.setLocalDescription(offer);
           socket.emit("simolife-offer", { to: peer.socketId, offer });
         }
 
-        // Aufräumen bei Disconnect
+        // Cleanup-Handler speichern
         return () => {
           socket.off("simolife-offer", handleOffer);
           socket.off("simolife-answer", handleAnswer);
           socket.off("simolife-ice", handleIce);
         };
       } catch (err) {
+        console.error("Kamera/Mikrofon Zugriff fehlgeschlagen:", err);
         alert("⚠️ Kamera/Mikrofon konnte nicht verwendet werden: " + err.message);
       }
-    }
+    };
 
     initConnection();
 
     return () => {
       isActive = false;
+
       if (peerConnection.current) {
         peerConnection.current.close();
         peerConnection.current = null;
       }
+
       if (myStream.current) {
-        myStream.current.getTracks().forEach(t => t.stop());
+        myStream.current.getTracks().forEach(track => track.stop());
         myStream.current = null;
       }
+
+      // Videos zurücksetzen
+      if (myVideoRef.current) myVideoRef.current.srcObject = null;
+      if (peerVideoRef.current) peerVideoRef.current.srcObject = null;
     };
   }, [peer, socket]);
 
