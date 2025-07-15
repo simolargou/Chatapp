@@ -1,120 +1,113 @@
 import React, { useEffect, useRef } from "react";
 
-/**
- * SimolifeVideo component: vertical split (your video on top, peer below)
- * Props:
- *   - socket: the socket.io instance
- *   - currentUser: current user object
- *   - peer: peer user object (with .socketId)
- *   - onNext: callback for "Next" button
- *   - onLeave: callback for "Leave" button
- */
 export default function SimolifeVideo({ socket, currentUser, peer, onNext, onLeave }) {
   const myVideoRef = useRef(null);
   const peerVideoRef = useRef(null);
-  const myStream = useRef();
-  const peerConnection = useRef();
+  const myStream = useRef(null);
+  const peerConnection = useRef(null);
 
-  // Handle own webcam/mic access
+  // --- WebRTC signaling handlers ---
   useEffect(() => {
-    async function getMedia() {
+    if (!peer || !peer.socketId) return;
+
+    // Start local camera/mic
+    let isActive = true;
+    async function startMedia() {
       try {
         myStream.current = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-        if (myVideoRef.current) {
-          myVideoRef.current.srcObject = myStream.current;
+        if (myVideoRef.current) myVideoRef.current.srcObject = myStream.current;
+
+        if (!isActive) return;
+
+        // Setup peer connection
+        peerConnection.current = new window.RTCPeerConnection({
+          iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
+        });
+
+        // Add own stream tracks to connection
+        myStream.current.getTracks().forEach(track => {
+          peerConnection.current.addTrack(track, myStream.current);
+        });
+
+        // Handle incoming remote stream
+        peerConnection.current.ontrack = event => {
+          if (peerVideoRef.current) {
+            peerVideoRef.current.srcObject = event.streams[0];
+          }
+        };
+
+        // ICE candidate handler
+        peerConnection.current.onicecandidate = event => {
+          if (event.candidate) {
+            socket.emit("simolife-ice", { to: peer.socketId, candidate: event.candidate });
+          }
+        };
+
+        // Listen for offer/answer/ICE
+        const handleOffer = async ({ from, offer }) => {
+          if (from !== peer.socketId) return;
+          await peerConnection.current.setRemoteDescription(new RTCSessionDescription(offer));
+          const answer = await peerConnection.current.createAnswer();
+          await peerConnection.current.setLocalDescription(answer);
+          socket.emit("simolife-answer", { to: peer.socketId, answer });
+        };
+        const handleAnswer = async ({ from, answer }) => {
+          if (from !== peer.socketId) return;
+          await peerConnection.current.setRemoteDescription(new RTCSessionDescription(answer));
+        };
+        const handleICE = async ({ from, candidate }) => {
+          if (from !== peer.socketId) return;
+          try {
+            await peerConnection.current.addIceCandidate(new RTCIceCandidate(candidate));
+          } catch (e) {
+            // ignore error if candidate is null/invalid
+          }
+        };
+
+        socket.on("simolife-offer", handleOffer);
+        socket.on("simolife-answer", handleAnswer);
+        socket.on("simolife-ice", handleICE);
+
+        // Decide who creates offer based on socketId
+        if (socket.socket.id < peer.socketId) {
+          // I'm the initiator, create offer
+          const offer = await peerConnection.current.createOffer();
+          await peerConnection.current.setLocalDescription(offer);
+          socket.emit("simolife-offer", { to: peer.socketId, offer });
         }
 
-        // Setup WebRTC only if peer is present
-        if (peer && peer.socketId) {
-          startWebRTC(peer.socketId);
-        }
+        // Cleanup listeners on unmount
+        return () => {
+          socket.off("simolife-offer", handleOffer);
+          socket.off("simolife-answer", handleAnswer);
+          socket.off("simolife-ice", handleICE);
+        };
+
       } catch (err) {
         alert("Failed to access camera/mic: " + err.message);
       }
     }
-    getMedia();
+
+    startMedia();
 
     return () => {
-      // Stop webcam on unmount
-      if (myStream.current) {
-        myStream.current.getTracks().forEach(t => t.stop());
-      }
+      isActive = false;
       if (peerConnection.current) {
         peerConnection.current.close();
+        peerConnection.current = null;
+      }
+      if (myStream.current) {
+        myStream.current.getTracks().forEach(t => t.stop());
+        myStream.current = null;
       }
     };
+    // Only re-run if peer changes!
     // eslint-disable-next-line
   }, [peer]);
 
-  // --- Simple WebRTC logic for peer connection (SFU style) ---
-  function startWebRTC(peerSocketId) {
-    if (peerConnection.current) {
-      peerConnection.current.close();
-      peerConnection.current = null;
-    }
-
-    // Use STUN only (Google's default)
-    peerConnection.current = new window.RTCPeerConnection({
-      iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
-    });
-
-    // Add local stream tracks to connection
-    myStream.current?.getTracks().forEach(track => {
-      peerConnection.current.addTrack(track, myStream.current);
-    });
-
-    // When remote stream arrives, show in peerVideoRef
-    peerConnection.current.ontrack = event => {
-      if (peerVideoRef.current) {
-        peerVideoRef.current.srcObject = event.streams[0];
-      }
-    };
-
-    // ICE candidates
-    peerConnection.current.onicecandidate = event => {
-      if (event.candidate && peerSocketId) {
-        socket.emit("simolife-ice", { to: peerSocketId, candidate: event.candidate });
-      }
-    };
-
-    // Offer/Answer logic
-    if (currentUser.id < peer.id) {
-      // Initiator: create offer
-      peerConnection.current.createOffer()
-        .then(offer => {
-          peerConnection.current.setLocalDescription(offer);
-          socket.emit("simolife-offer", { to: peerSocketId, offer });
-        });
-    }
-
-    // Listen for signaling messages
-    socket.on("simolife-offer", ({ from, offer }) => {
-      if (from === peerSocketId) {
-        peerConnection.current.setRemoteDescription(new RTCSessionDescription(offer));
-        peerConnection.current.createAnswer()
-          .then(answer => {
-            peerConnection.current.setLocalDescription(answer);
-            socket.emit("simolife-answer", { to: peerSocketId, answer });
-          });
-      }
-    });
-
-    socket.on("simolife-answer", ({ from, answer }) => {
-      if (from === peerSocketId) {
-        peerConnection.current.setRemoteDescription(new RTCSessionDescription(answer));
-      }
-    });
-
-    socket.on("simolife-ice", ({ from, candidate }) => {
-      if (from === peerSocketId && candidate) {
-        peerConnection.current.addIceCandidate(new RTCIceCandidate(candidate));
-      }
-    });
-  }
-
   return (
     <div className="fixed inset-0 z-50 bg-black bg-opacity-95 flex flex-col items-center justify-center">
-      {/* Stacked (vertical) videos */}
+      {/* Vertical videos */}
       <div className="flex flex-col gap-8 items-center mb-6 w-full max-w-xl">
         {/* Own video */}
         <div className="flex flex-col items-center w-full">
