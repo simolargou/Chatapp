@@ -1,19 +1,27 @@
-// socket.js
+// src/socket.js
 
 import { io } from 'socket.io-client';
 
+// Default to localhost for dev, but use env for prod
 const URL = process.env.REACT_APP_API_URL ;
 
 class SocketService {
-  socket;
+  socket = null;
 
   connect(user) {
-    if (this.socket?.connected) return;
+    // Only reconnect if not connected or not created
+    if (this.socket && this.socket.connected) return;
+    if (this.socket && !this.socket.connected) {
+      this.socket.connect();
+      return;
+    }
 
+    // Create new socket connection
     console.log("⚙️ Connecting socket to", URL);
     this.socket = io(URL, {
       autoConnect: false,
-      auth: { user }
+      auth: { user },
+      transports: ['websocket'],  // force WebSocket for WebRTC, can help in prod
     });
 
     this.socket.on('connect', () => {
@@ -41,17 +49,21 @@ class SocketService {
   }
 
   on(evt, cb) {
-    this.socket?.on(evt, cb);
+    if (!this.socket) return;
+    this.socket.on(evt, cb);
   }
 
   off(evt, cb) {
-    this.socket?.off(evt, cb);
+    if (!this.socket) return;
+    this.socket.off(evt, cb);
   }
 
   emit(evt, data) {
+    if (!this.socket) return;
     console.log(`emit '${evt}':`, data);
-    this.socket?.emit(evt, data);
+    this.socket.emit(evt, data);
   }
 }
 
+// Export as singleton
 export const socket = new SocketService();
