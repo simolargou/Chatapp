@@ -293,22 +293,31 @@ io.on('connection', socket => {
 
   // --- SIMOLIFE video matching logic ---
   socket.on('simolife-join', user => {
+    socket.auth = { user }; // ⬅️ Damit auth.user gesetzt ist!
     socket.simolifeActive = true;
-    socket.simolifePeer  = null;
-    // See if anyone else is waiting
-    let peer = simolifeQueue.find(s => s.id !== socket.id && s.simolifeActive && !s.simolifePeer);
+    socket.simolifePeer = null;
+
+    // Erst hier suchen, wenn wir mindestens 2 Clients haben
+    const peer = simolifeQueue.find(
+      s => s.id !== socket.id && s.simolifeActive && !s.simolifePeer
+    );
+
     if (peer) {
-      // Match them!
+      // Match herstellen
       socket.simolifePeer = peer.auth.user;
-      peer.simolifePeer   = socket.auth.user;
-      // Remove both from queue
+      peer.simolifePeer = socket.auth.user;
+
       simolifeQueue = simolifeQueue.filter(s => s.id !== peer.id && s.id !== socket.id);
-      // Notify both clients
-      socket.emit('simolife-matched', { peer: peer.auth.user });
-      peer.emit('simolife-matched', { peer: socket.auth.user });
+
+      socket.emit("simolife-matched", { peer: peer.auth.user });
+      peer.emit("simolife-matched", { peer: socket.auth.user });
+
+      console.log(`✅ Match: ${socket.id} ↔ ${peer.id}`);
     } else {
+      // Kein Match, also zur Queue hinzufügen
       simolifeQueue.push(socket);
-      socket.emit('simolife-matched', { peer: null }); // waiting
+      socket.emit("simolife-matched", { peer: null });
+      console.log(`⏳ Wartet auf Match: ${socket.id}`);
     }
   });
 
