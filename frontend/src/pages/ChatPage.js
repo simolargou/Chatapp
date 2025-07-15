@@ -25,30 +25,32 @@ export default function ChatPage() {
     });
 
     socket.on('getOnlineUsers', users => {
-      console.log('Online users:', users);
       setOnlineUsers(users);
     });
 
     const handleNew = msg => {
       setMessages(prev => {
         if (prev.some(m => m._id === msg._id)) return prev;
-
-  
         if (msg.author?._id !== currentUser.id) {
           audioRef.current?.play().catch(err => {
             console.warn("Sound error:", err);
           });
         }
-
         return [...prev, msg];
       });
     };
     socket.on('receivePublicMessage', handleNew);
 
+
+    socket.on('messageDeleted', messageId => {
+      setMessages(prev => prev.filter(msg => msg._id !== messageId));
+    });
+
     return () => {
       socket.off('publicHistory');
       socket.off('getOnlineUsers');
       socket.off('receivePublicMessage', handleNew);
+      socket.off('messageDeleted');
     };
   }, [currentUser]);
 
@@ -76,6 +78,27 @@ export default function ChatPage() {
     });
   };
 
+ 
+  const handleDeleteMessage = async (messageId) => {
+
+    try {
+      const res = await fetch(`/api/messages/${messageId}`, {
+        method: 'DELETE',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      if (res.ok) {
+        setMessages(prev => prev.filter(msg => msg._id !== messageId));
+      } else {
+        alert('Delete failed!');
+      }
+    } catch (err) {
+      alert('Network error!');
+    }
+
+  
+  };
+
   const logout = () => {
     socket.disconnect();
     localStorage.clear();
@@ -84,10 +107,7 @@ export default function ChatPage() {
 
   return (
     <div className="flex h-screen bg-darkgreen text-lime ">
-
-
       <audio ref={audioRef} src="/sounds/notification.mp3" preload="auto" />
-
 
       <aside className={`
         fixed inset-y-0 left-0 z-20 w-72 bg-black p-4 flex flex-col 
@@ -127,10 +147,7 @@ export default function ChatPage() {
         </div>
       </aside>
 
-  
       <main className="flex flex-1 flex-col bg-lime ">
-
-
         <div className="md:hidden h-1/8 flex items-center p-2 bg-green border-b-2 border-darkgreen">
           <div className='border-2 flex items-center'>
             <button onClick={() => setSidebarOpen(true)} className="mr-2">☰</button>
@@ -158,17 +175,29 @@ export default function ChatPage() {
                 {msg.messageType === 'audio'
                   ? <AudioPlayer src={msg.audioUrl} />
                   : <p>{msg.text}</p>}
-                <p className="mt-1 text-xs opacity-70">
-                  {new Date(msg.timestamp).toLocaleTimeString([], {
-                    hour: '2-digit', minute: '2-digit'
-                  })}
-                </p>
+                <div className="flex items-center justify-between">
+                  <p className="mt-1 text-xs opacity-70">
+                    {new Date(msg.timestamp).toLocaleTimeString([], {
+                      hour: '2-digit', minute: '2-digit'
+                    })}
+                  </p>
+                 
+                 
+                  {msg.author?._id === currentUser.id && (
+                    <button
+                      className="ml-2 text-red-500 hover:text-red-700 text-xs"
+                      onClick={() => handleDeleteMessage(msg._id)}
+                      title="Delete"
+                    >
+                      🗑️
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           ))}
           <div ref={endRef} />
         </div>
-
 
         <form onSubmit={sendText}
               className="flex items-center gap-2 p-4 bg-green border-t-2 border-darkgreen">
