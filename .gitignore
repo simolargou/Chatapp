@@ -16,3 +16,4 @@ frontend/build
 Thumbs.db
 .
 .history/
+docker-compose.yml
