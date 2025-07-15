@@ -7,20 +7,20 @@ export default function SimolifeModal({ open, onAccept, onDecline }) {
       <div className="bg-darkgreen p-8 rounded-xl border-2 border-lime flex flex-col items-center shadow-xl max-w-sm w-full">
         <h2 className="text-2xl font-bold text-lime mb-2">Simolife Video Chat</h2>
         <p className="text-lg text-white mb-6 text-center">
-          Would you like to start a random video chat and meet other users right now?
+          Möchtest du jetzt ein zufälliges Video-Gespräch mit anderen Nutzern starten?
         </p>
         <div className="flex gap-4">
           <button
             className="bg-lime text-darkgreen px-5 py-2 rounded font-bold text-lg hover:bg-litegreen"
             onClick={onAccept}
           >
-            Yes!
+            Ja!
           </button>
           <button
             className="bg-red-500 text-white px-5 py-2 rounded font-bold text-lg hover:bg-red-600"
             onClick={onDecline}
           >
-            No
+            Nein
           </button>
         </div>
       </div>

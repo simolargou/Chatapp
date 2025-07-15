@@ -7,52 +7,30 @@ export default function SimolifeVideo({ socket, currentUser, peer, onNext, onLea
   const peerConnection = useRef(null);
   const [status, setStatus] = useState("🔍 Suche nach Partner...");
 
-  // Kamera starten
- useEffect(() => {
-  (async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-      myStream.current = stream;
-      if (myVideoRef.current) {
-        myVideoRef.current.srcObject = stream;
-      }
-      console.log("✅ Kamera/Mikrofon Zugriff erfolgreich");
-
-      // 👉️ HIER emit hinzufügen!
-      if (currentUser && socket) {
-        socket.emit("simolife-join", currentUser);
-        console.log("📡 simolife-join gesendet:", currentUser);
-      }
-
-    } catch (err) {
-      console.error("❌ Kamera/Mikrofon Fehler:", err);
-      alert("⚠️ Zugriff auf Kamera/Mikrofon nicht möglich: " + err.message);
-    }
-  })();
-
-  return () => {
-    if (myStream.current) {
-      myStream.current.getTracks().forEach(t => t.stop());
-      myStream.current = null;
-    }
-    if (myVideoRef.current) myVideoRef.current.srcObject = null;
-  };
-}, []);
-
-  // userOnline + simolife-join senden
   useEffect(() => {
-    if (!socket || !currentUser) return;
-    socket.emit("userOnline", currentUser);
+    (async () => {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        myStream.current = stream;
+        if (myVideoRef.current) {
+          myVideoRef.current.srcObject = stream;
+        }
+        console.log("✅ Kamera/Mikrofon Zugriff erfolgreich");
+      } catch (err) {
+        console.error("❌ Kamera/Mikrofon Fehler:", err);
+        alert("⚠️ Zugriff auf Kamera/Mikrofon nicht möglich: " + err.message);
+      }
+    })();
 
-    const joinTimeout = setTimeout(() => {
-      socket.emit("simolife-join", currentUser);
-      setStatus("🔍 Suche nach Partner...");
-    }, 500);
+    return () => {
+      if (myStream.current) {
+        myStream.current.getTracks().forEach(t => t.stop());
+        myStream.current = null;
+      }
+      if (myVideoRef.current) myVideoRef.current.srcObject = null;
+    };
+  }, []);
 
-    return () => clearTimeout(joinTimeout);
-  }, [socket, currentUser]);
-
-  // Wenn Peer vorhanden ist → verbinden
   useEffect(() => {
     if (!peer || !peer.socketId || !myStream.current) return;
 
@@ -132,9 +110,7 @@ export default function SimolifeVideo({ socket, currentUser, peer, onNext, onLea
 
   return (
     <div className="fixed inset-0 z-50 bg-black bg-opacity-95 flex flex-col items-center justify-center">
-      {/* Statusanzeige */}
       <div className="mb-4 text-white text-lg font-semibold">{status}</div>
-
       <div className="flex flex-col gap-6 items-center mb-6 w-full max-w-xl">
         <div className="flex flex-col items-center w-full">
           <video
@@ -156,7 +132,6 @@ export default function SimolifeVideo({ socket, currentUser, peer, onNext, onLea
           <span className="text-white mt-1 font-bold text-lg">Stranger</span>
         </div>
       </div>
-
       <div className="flex gap-4 mt-3">
         <button
           onClick={() => {
