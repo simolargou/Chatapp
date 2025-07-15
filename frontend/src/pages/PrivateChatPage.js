@@ -163,21 +163,21 @@ export default function PrivateChatPage() {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     localStreamRef.current = stream;
 
-    // 2. Create PeerConnection
+    
     const pc = createPeerConnection();
     peerConnectionRef.current = pc;
 
-    // 3. Add audio track
+    
     stream.getTracks().forEach(track => pc.addTrack(track, stream));
 
-    // 4. Set remote offer from caller
+    
     await pc.setRemoteDescription(window.offerData);
 
-    // 5. Create answer
+    
     const answer = await pc.createAnswer();
     await pc.setLocalDescription(answer);
 
-    // 6. Send answer back to caller
+   
     socket.emit('audio-call-answer', {
       to: incomingCaller,
       answer,
@@ -186,7 +186,7 @@ export default function PrivateChatPage() {
     setIncomingCaller(null);
   };
 
-  // Decline incoming call
+  
   const declineCall = () => {
     setCallState("idle");
     setIncomingCaller(null);
@@ -194,14 +194,14 @@ export default function PrivateChatPage() {
     socket.emit('audio-call-ended', { to: incomingCaller, from: currentUser.username });
   };
 
-  // End call
+  
   const endCall = () => {
     cleanupCall();
-    // Notify peer
+    
     socket.emit('audio-call-ended', { to: toUsername, from: currentUser.username });
   };
 
-  // PeerConnection setup
+  
   function createPeerConnection() {
     const pc = new RTCPeerConnection({
       iceServers: [
@@ -278,7 +278,7 @@ export default function PrivateChatPage() {
 
       {/* Incoming Call UI */}
       {callState === "ringing" && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-70 z-50">
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-70 z-50 animate-bounce">
           <div className="bg-white p-8 rounded-lg shadow-lg flex flex-col items-center">
             <p className="mb-4 text-lg font-bold">Incoming call from {incomingCaller}</p>
             <button className="mb-2 px-4 py-2 bg-life text-white rounded" onClick={acceptCall}>Accept</button>

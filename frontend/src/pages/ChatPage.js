@@ -79,25 +79,26 @@ export default function ChatPage() {
   };
 
  
-  const handleDeleteMessage = async (messageId) => {
-
-    try {
-      const res = await fetch(`/api/messages/${messageId}`, {
-        method: 'DELETE',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-      });
-      if (res.ok) {
-        setMessages(prev => prev.filter(msg => msg._id !== messageId));
-      } else {
-        alert('Delete failed!');
-      }
-    } catch (err) {
-      alert('Network error!');
+const handleDeleteMessage = async (messageId) => {
+  try {
+    const token = localStorage.getItem('token'); 
+    const res = await fetch(`/api/messages/${messageId}`, {
+      method: 'DELETE',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + token, 
+      },
+    });
+    if (res.ok) {
+      setMessages(prev => prev.filter(msg => msg._id !== messageId));
+    } else {
+      alert('Delete failed!');
     }
-
-  
-  };
+  } catch (err) {
+    alert('Network error!');
+  }
+};
 
   const logout = () => {
     socket.disconnect();
@@ -171,7 +172,7 @@ export default function ChatPage() {
                   : 'bg-green text-lime text-left rounded-bl-none'}
                 max-w-[70%] w-fit
               `}>
-                <p className="font-bold">{msg.author?.username || 'Unknown'}</p>
+                <p className="font-bold ">{msg.author?.username || 'Unknown'}</p>
                 {msg.messageType === 'audio'
                   ? <AudioPlayer src={msg.audioUrl} />
                   : <p>{msg.text}</p>}

@@ -9,6 +9,7 @@ const cors       = require('cors');
 const path       = require('path');
 const fs         = require('fs');
 const multer     = require('multer');
+const messagesRouter = require('./routes/messages');
 
 console.log('🛠️  Using MONGO_URI:', process.env.MONGO_URI);
 
@@ -20,6 +21,7 @@ const app    = express();
 const server = http.createServer(app);
 app.use(cors());
 app.use(express.json());
+app.use('/api/messages', messagesRouter);
 
 const uploadsDir = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir);
