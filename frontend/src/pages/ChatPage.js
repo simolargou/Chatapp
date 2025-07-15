@@ -55,9 +55,7 @@ export default function ChatPage() {
     };
   }, [currentUser]);
 
-  useEffect(() => {
-    if (currentUser) setShowSimolifeModal(true);
-  }, [currentUser]);
+
 
   useEffect(() => {
     socket.on('simolife-matched', ({ peer }) => setSimolifePeer(peer));
@@ -105,6 +103,7 @@ export default function ChatPage() {
     socket.emit('simolife-leave');
     setSimolifeActive(false);
     setSimolifePeer(null);
+    setShowSimolifeModal(false); 
   };
 
   const handleDeleteMessage = async messageId => {
@@ -156,6 +155,12 @@ export default function ChatPage() {
         </div>
 
         <div className="flex justify-between items-center mb-2">
+        <button
+          onClick={() => setShowSimolifeModal(true)}
+          className="m-2 px-4 py-2 bg-blue-600 text-white rounded shadow hover:bg-blue-700"
+        >
+          🎥 Zufalls-Videochat starten
+        </button>
           <h2 className="text-lg">Now Online ({onlineUsers.length})</h2>
           <button onClick={() => setSidebarOpen(false)} className="md:hidden border-2 rounded-full p-2 ml-2 mt-2">✕</button>
         </div>
