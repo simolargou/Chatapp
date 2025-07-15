@@ -278,8 +278,8 @@ export default function PrivateChatPage() {
 
       {/* Incoming Call UI */}
       {callState === "ringing" && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-70 z-50 animate-bounce">
-          <div className="bg-white p-8 rounded-lg shadow-lg flex flex-col items-center">
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-70 z-50">
+          <div className="bg-white p-8 rounded-lg shadow-lg flex flex-col items-center animate-bounce">
             <p className="mb-4 text-lg font-bold">Incoming call from {incomingCaller}</p>
             <button className="mb-2 px-4 py-2 bg-life text-white rounded" onClick={acceptCall}>Accept</button>
             <button className="px-4 py-2 bg-red-500 text-white rounded" onClick={declineCall}>Decline</button>
