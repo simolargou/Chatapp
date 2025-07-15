@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import { socket } from '../socket';
 import Recorder from '../components/Recorder';
 import AudioPlayer from '../components/AudioPlayer';
+import logo from '../assets/logo.png';
+import defaultAvatar from '../assets/avatar.png';
 
 export default function ChatPage() {
   const [messages, setMessages]             = useState([]);
@@ -41,7 +43,6 @@ export default function ChatPage() {
     };
     socket.on('receivePublicMessage', handleNew);
 
-
     socket.on('messageDeleted', messageId => {
       setMessages(prev => prev.filter(msg => msg._id !== messageId));
     });
@@ -78,27 +79,26 @@ export default function ChatPage() {
     });
   };
 
- 
-const handleDeleteMessage = async (messageId) => {
-  try {
-    const token = localStorage.getItem('token'); 
-    const res = await fetch(`/api/messages/${messageId}`, {
-      method: 'DELETE',
-      credentials: 'include',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer ' + token, 
-      },
-    });
-    if (res.ok) {
-      setMessages(prev => prev.filter(msg => msg._id !== messageId));
-    } else {
-      alert('Delete failed!');
+  const handleDeleteMessage = async (messageId) => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`/api/messages/${messageId}`, {
+        method: 'DELETE',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + token,
+        },
+      });
+      if (res.ok) {
+        setMessages(prev => prev.filter(msg => msg._id !== messageId));
+      } else {
+        alert('Delete failed!');
+      }
+    } catch (err) {
+      alert('Network error!');
     }
-  } catch (err) {
-    alert('Network error!');
-  }
-};
+  };
 
   const logout = () => {
     socket.disconnect();
@@ -106,21 +106,38 @@ const handleDeleteMessage = async (messageId) => {
     window.location.href = '/auth';
   };
 
+  // Helper for profile pics
+  const getProfilePic = (profilePic) =>
+    profilePic ? profilePic : defaultAvatar;
+
   return (
     <div className="flex h-screen bg-darkgreen text-lime ">
       <audio ref={audioRef} src="/sounds/notification.mp3" preload="auto" />
 
+      {/* Sidebar */}
       <aside className={`
-        fixed inset-y-0 left-0 z-20 w-72 bg-black p-4 flex flex-col 
+        fixed inset-y-0 left-0 z-20 w-72 bg-black p-2 flex flex-col 
         transform transition-transform duration-300 ease-in-out
         ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
         md:relative md:translate-x-0 md:flex-shrink-0
       `}>
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-2xl ">Now Online ({onlineUsers.length})</h2>
+        {/* Own Profile Pic at top like Facebook */}
+        <div className="flex flex-col items-center  pb-4 border-b border-litegreen">
+          <img
+            src={getProfilePic(currentUser?.profilePic)}
+            alt="My Profile"
+            className="w-20 h-20 rounded-md border-2 border-lime object-cover shadow "
+          />
+          <div className="text-center">
+            <h2 className="text-xl font-bold">{currentUser?.username}</h2>
+            <p className="text-xs text-lime">You</p>
+          </div>
+        </div>
+        <div className="flex justify-between items-center text-center mb-2">
+          <h2 className="text-lg ">Now Online ({onlineUsers.length})</h2>
           <button onClick={() => setSidebarOpen(false)} className="md:hidden border-2 rounded-full p-2 ml-2 mt-2">✕</button>
         </div>
-
+        {/* Online Users */}
         <ul className="flex-grow overflow-y-auto space-y-2 border-t border-litegreen pt-4">
           {onlineUsers.filter(u => u.id !== currentUser.id).length === 0 && (
             <li className="text-center text-gray-400 ">No users online.</li>
@@ -128,10 +145,15 @@ const handleDeleteMessage = async (messageId) => {
           {onlineUsers
             .filter(u => u.id !== currentUser.id)
             .map(u => (
-              <li key={u.id}>
+              <li key={u.id} className="flex items-center gap-3 mb-2">
+                <img
+                  src={getProfilePic(u.profilePic)}
+                  alt="User"
+                  className="w-10 h-10 rounded-full border-2 border-litegreen object-cover"
+                />
                 <Link
                   to={`/chat/${u.username}`}
-                  className="block w-full text-center text-xl rounded-full text-white font-bold hover:bg-life mb-2  bg-darkgreen animate-glow"
+                  className="flex-1 block text-lg rounded-md text-white text-center hover:bg-life  animate-glow"
                 >
                   {u.username}
                 </Link>
@@ -139,22 +161,25 @@ const handleDeleteMessage = async (messageId) => {
             ))
           }
         </ul>
-        <div className='flex-row flex'>
-          <h1 className='w-1/2 cursor-pointer underline'>Log out</h1>
+        <div className='flex-row flex mt-4'>
+          <h1 className='w-1/2 cursor-pointer '>Sign out</h1>
           <button onClick={logout}
-                  className="w-1/2 p-2 bg-orange-500 text-white font-bold py-2 rounded-full hover:bg-red-600">
+                  className="w-1/2 p-2 bg-red-700 text-white font-bold py-2 rounded-full hover:bg-red-600">
             Out
           </button>
         </div>
       </aside>
 
+      {/* Chat Main */}
       <main className="flex flex-1 flex-col bg-lime ">
-        <div className="md:hidden h-1/8 flex items-center p-2 bg-green border-b-2 border-darkgreen">
-          <div className='border-2 flex items-center'>
-            <button onClick={() => setSidebarOpen(true)} className="mr-2">☰</button>
+        <div className="md:hidden h-20 flex items-center p-2 bg-green border-b-2 border-darkgreen relative">
+          {/* Sidebar-Button immer ganz links */}
+          <div className="absolute left-4 top-1/2 -translate-y-1/2 flex items-center">
+            <button onClick={() => setSidebarOpen(true)} className="mr-2 text-2xl">☰</button>
           </div>
-          <div className=''>
-             <h1 className="text-5xl font-bold cursor-pointer">XChat</h1>
+          {/* Das Logo exakt mittig */}
+          <div className="flex-1 flex justify-center items-center">
+            <img src={logo} alt="XChat Logo" width={100} height={100} />
           </div>
         </div>
 
@@ -166,13 +191,30 @@ const handleDeleteMessage = async (messageId) => {
                 ${msg.author?._id === currentUser.id ? 'justify-end' : 'justify-start'}
               `}
             >
+              {/* User avatar */}
+              {msg.author?._id !== currentUser.id && (
+                <img
+                  src={getProfilePic(msg.author?.profilePic)}
+                  alt="Avatar"
+                  className="w-9 h-9 rounded-full border-2 border-litegreen object-cover mr-2 self-end"
+                />
+              )}
               <div className={`p-3 rounded-lg break-words
                 ${msg.author?._id === currentUser.id
                   ? 'bg-litegreen text-darkgreen text-right rounded-br-none'
                   : 'bg-green text-lime text-left rounded-bl-none'}
                 max-w-[70%] w-fit
               `}>
-                <p className="font-bold ">{msg.author?.username || 'Unknown'}</p>
+                <p className="font-bold flex items-center gap-2">
+                  {msg.author?.username || 'Unknown'}
+                  {msg.author?._id === currentUser.id && (
+                    <img
+                      src={getProfilePic(currentUser?.profilePic)}
+                      alt="Me"
+                      className="w-7 h-7 rounded-full border border-litegreen object-cover ml-1 inline"
+                    />
+                  )}
+                </p>
                 {msg.messageType === 'audio'
                   ? <AudioPlayer src={msg.audioUrl} />
                   : <p>{msg.text}</p>}
@@ -182,8 +224,6 @@ const handleDeleteMessage = async (messageId) => {
                       hour: '2-digit', minute: '2-digit'
                     })}
                   </p>
-                 
-                 
                   {msg.author?._id === currentUser.id && (
                     <button
                       className="ml-2 text-red-500 hover:text-red-700 text-xs"
@@ -195,6 +235,14 @@ const handleDeleteMessage = async (messageId) => {
                   )}
                 </div>
               </div>
+              {/* Your avatar on own messages (optional, Facebook-style) */}
+              {msg.author?._id === currentUser.id && (
+                <img
+                  src={getProfilePic(currentUser?.profilePic)}
+                  alt="Me"
+                  className="w-9 h-9 rounded-full border-2 border-litegreen object-cover ml-2 self-end"
+                />
+              )}
             </div>
           ))}
           <div ref={endRef} />

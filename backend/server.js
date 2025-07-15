@@ -27,38 +27,104 @@ app.use((req, res, next) => {
   next();
 });
 
-// ======= ROUTES =======
-const authRouter = require('./routes/auth');
-app.use('/api/auth', authRouter);
-
-const messagesRouter = require('./routes/messages');
-app.use('/api/messages', messagesRouter);
-
 // ======= FILE UPLOAD =======
 const uploadsDir = path.join(__dirname, 'uploads');
+const profilePicsDir = path.join(uploadsDir, 'profile-pics');
 if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir);
+if (!fs.existsSync(profilePicsDir)) fs.mkdirSync(profilePicsDir, { recursive: true });
 
-const storage = multer.diskStorage({
+// Multer storage for audio uploads (default)
+const audioStorage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, uploadsDir),
   filename:    (req, file, cb) => {
     const suffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
     cb(null, `${file.fieldname}-${suffix}${path.extname(file.originalname)}`);
   }
 });
-const upload = multer({ storage });
+const audioUpload = multer({ storage: audioStorage });
+
+// Multer storage for profile pics
+const profilePicStorage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, profilePicsDir),
+  filename:    (req, file, cb) => {
+    const ext = path.extname(file.originalname);
+    cb(null, `profile-${Date.now()}${ext}`);
+  }
+});
+const profilePicUpload = multer({ storage: profilePicStorage });
+
 app.use('/uploads', express.static(uploadsDir));
 
-app.post('/api/upload/audio', upload.single('audio'), (req, res) => {
+// Audio upload endpoint
+app.post('/api/upload/audio', audioUpload.single('audio'), (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No file uploaded.' });
   res.json({ audioUrl: `/uploads/${req.file.filename}` });
 });
+
+// ======= ROUTES =======
+const expressJwt = require('jsonwebtoken'); // for reference, if you want to add JWT middleware later
+
+// --- Auth Routes ---
+const authRouter = express.Router();
+
+// Register with profile pic upload
+authRouter.post('/register', profilePicUpload.single('profilePic'), async (req, res) => {
+  const { username, password } = req.body;
+  try {
+    if (!username || !password)
+      return res.status(400).json({ msg: 'Please enter all fields' });
+    if (await User.findOne({ username }))
+      return res.status(400).json({ msg: 'User already exists' });
+
+    const profilePicUrl = req.file ? `/uploads/profile-pics/${req.file.filename}` : '';
+    const user = new User({ username, password, profilePic: profilePicUrl });
+    await user.save();
+    res.status(201).json({ msg: 'User registered successfully' });
+  } catch (err) {
+    console.error('Register error:', err);
+    res.status(500).send('Server error');
+  }
+});
+
+// Login unchanged, but returns profilePic
+authRouter.post('/login', async (req, res) => {
+  const { username, password } = req.body;
+  try {
+    if (!username || !password)
+      return res.status(400).json({ msg: 'Invalid credentials' });
+
+    const user = await User.findOne({ username });
+    if (!user || !(await user.comparePassword(password)))
+      return res.status(400).json({ msg: 'Invalid credentials' });
+
+    const payload = { user: { id: user.id, username: user.username, profilePic: user.profilePic } };
+    expressJwt.sign(
+      payload,
+      process.env.JWT_SECRET,
+      { expiresIn: '8h' },
+      (err, token) => {
+        if (err) throw err;
+        res.json({ token, user: { id: user.id, username: user.username, profilePic: user.profilePic } });
+      }
+    );
+  } catch (err) {
+    console.error('Login error:', err);
+    res.status(500).send('Server error');
+  }
+});
+
+app.use('/api/auth', authRouter);
+
+// --- Messages Routes ---
+const messagesRouter = require('./routes/messages');
+app.use('/api/messages', messagesRouter);
 
 // ======= PUBLIC MESSAGE HISTORY =======
 app.get('/api/messages/public', async (req, res) => {
   try {
     const history = await Message.find({ conversation: null })
       .sort({ timestamp: 1 })
-      .populate('author', 'username');
+      .populate('author', 'username profilePic');
     res.json(history);
   } catch (err) {
     console.error('Error fetching public messages:', err);
@@ -90,9 +156,9 @@ io.on('connection', socket => {
   socket.on('userOnline', user => {
     if (!user?.id) return;
     socket.auth = { user };
-    onlineUsers[user.id] = { username: user.username, socketId: socket.id };
+    onlineUsers[user.id] = { username: user.username, profilePic: user.profilePic, socketId: socket.id };
     io.emit('getOnlineUsers',
-      Object.entries(onlineUsers).map(([id, u]) => ({ id, username: u.username }))
+      Object.entries(onlineUsers).map(([id, u]) => ({ id, username: u.username, profilePic: u.profilePic }))
     );
   });
 
@@ -101,7 +167,7 @@ io.on('connection', socket => {
     if (u?.id) {
       delete onlineUsers[u.id];
       io.emit('getOnlineUsers',
-        Object.entries(onlineUsers).map(([id, u]) => ({ id, username: u.username }))
+        Object.entries(onlineUsers).map(([id, u]) => ({ id, username: u.username, profilePic: u.profilePic }))
       );
     }
   });
@@ -111,7 +177,7 @@ io.on('connection', socket => {
     try {
       const history = await Message.find({ conversation: null })
         .sort({ timestamp: 1 })
-        .populate('author', 'username');
+        .populate('author', 'username profilePic');
       socket.emit('publicHistory', history);
       console.log(`← publicHistory (${history.length}) sent`);
     } catch (err) {
@@ -143,7 +209,7 @@ io.on('connection', socket => {
       const count = await Message.countDocuments();
       console.log('   🔢 total messages in DB:', count);
 
-      const populated = await saved.populate('author', 'username');
+      const populated = await saved.populate('author', 'username profilePic');
       io.emit('receivePublicMessage', populated);
       console.log('   📡 broadcasted:', populated._id);
     } catch (err) {

@@ -2,8 +2,28 @@ const express = require('express');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const router = express.Router();
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
 
-router.post('/register', async (req, res) => {
+// Create the profile-pics upload folder if it doesn't exist
+const profilePicsDir = path.join(__dirname, '../uploads/profile-pics');
+if (!fs.existsSync(profilePicsDir)) {
+    fs.mkdirSync(profilePicsDir, { recursive: true });
+}
+
+// Multer storage config
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => cb(null, profilePicsDir),
+    filename: (req, file, cb) => {
+        const ext = path.extname(file.originalname);
+        cb(null, `profile-${Date.now()}${ext}`);
+    }
+});
+const upload = multer({ storage });
+
+// --- REGISTER ---
+router.post('/register', upload.single('profilePic'), async (req, res) => {
     const { username, password } = req.body;
     try {
         if (!username || !password)
@@ -11,7 +31,8 @@ router.post('/register', async (req, res) => {
         if (await User.findOne({ username }))
             return res.status(400).json({ msg: 'User already exists' });
 
-        const user = new User({ username, password }); 
+        const profilePicUrl = req.file ? `/uploads/profile-pics/${req.file.filename}` : '';
+        const user = new User({ username, password, profilePic: profilePicUrl });
         await user.save();
         res.status(201).json({ msg: 'User registered successfully' });
     } catch (err) {
@@ -20,6 +41,7 @@ router.post('/register', async (req, res) => {
     }
 });
 
+// --- LOGIN ---
 router.post('/login', async (req, res) => {
     const { username, password } = req.body;
     try {
@@ -30,14 +52,14 @@ router.post('/login', async (req, res) => {
         if (!user || !(await user.comparePassword(password)))
             return res.status(400).json({ msg: 'Invalid credentials' });
 
-        const payload = { user: { id: user.id, username: user.username } };
+        const payload = { user: { id: user.id, username: user.username, profilePic: user.profilePic } };
         jwt.sign(
             payload,
             process.env.JWT_SECRET,
             { expiresIn: '8h' },
             (err, token) => {
                 if (err) throw err;
-                res.json({ token, user: { id: user.id, username: user.username } });
+                res.json({ token, user: { id: user.id, username: user.username, profilePic: user.profilePic } });
             }
         );
     } catch (err) {
