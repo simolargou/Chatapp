@@ -20,6 +20,8 @@ services:
       - MONGO_URI=mongodb://mongo:27017/Xchat
     depends_on:
       - mongo
+    volumes:
+      - ./uploads:/app/uploads   
 
   frontend:
     build: ./frontend
@@ -32,3 +34,4 @@ services:
 
 volumes:
   mongo-data:
+

@@ -18,7 +18,7 @@ const Conversation = require('./models/Conversation');
 
 // ======= EXPRESS MIDDLEWARE =======
 app.use(express.json());
-
+const uploadsDir = path.join(__dirname, 'uploads');
 // ---- CORS-Header für ALLE Anfragen (vor allen Routern!) ----
 app.use((req, res, next) => {
   res.header('Access-Control-Allow-Origin', '*'); // Für Prod: deine Domain statt '*'
@@ -28,7 +28,7 @@ app.use((req, res, next) => {
 });
 
 // ======= FILE UPLOAD =======
-const uploadsDir = path.join(__dirname, 'uploads');
+
 const profilePicsDir = path.join(uploadsDir, 'profile-pics');
 if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir);
 if (!fs.existsSync(profilePicsDir)) fs.mkdirSync(profilePicsDir, { recursive: true });
@@ -53,7 +53,7 @@ const profilePicStorage = multer.diskStorage({
 });
 const profilePicUpload = multer({ storage: profilePicStorage });
 
-app.use('/uploads', express.static(uploadsDir));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Audio upload endpoint
 app.post('/api/upload/audio', audioUpload.single('audio'), (req, res) => {
