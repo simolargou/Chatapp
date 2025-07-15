@@ -9,36 +9,37 @@ class SocketService {
   socket = null;
 
   connect(user) {
-    // Only reconnect if not connected or not created
-    if (this.socket && this.socket.connected) return;
-    if (this.socket && !this.socket.connected) {
-      this.socket.connect();
-      return;
-    }
-
-    // Create new socket connection
-    console.log("⚙️ Connecting socket to", URL);
-    this.socket = io(URL, {
-      autoConnect: false,
-      auth: { user },
-      transports: ['websocket'],  // force WebSocket for WebRTC, can help in prod
-    });
-
-    this.socket.on('connect', () => {
-      console.log(`Socket connected. ID: ${this.socket.id}`);
-      this.emit('userOnline', user);
-    });
-
-    this.socket.on('connect_error', err => {
-      console.error('Socket connect_error:', err.message);
-    });
-
-    this.socket.on('disconnect', reason => {
-      console.log(`Socket disconnected: ${reason}`);
-    });
-
+  // Only reconnect if already connected
+  if (this.socket && this.socket.connected) return;
+  if (this.socket && !this.socket.connected) {
+    this.socket.auth = { user }; // ⬅️ setze es explizit vor reconnect
     this.socket.connect();
+    return;
   }
+
+  console.log("⚙️ Connecting socket to", URL);
+  this.socket = io(URL, {
+    autoConnect: false,
+    transports: ['websocket'],
+  });
+  this.socket.auth = { user }; // ⬅️ HIER!
+
+  this.socket.on('connect', () => {
+    console.log(`Socket connected. ID: ${this.socket.id}`);
+    this.emit('userOnline', user);
+  });
+
+  this.socket.on('connect_error', err => {
+    console.error('Socket connect_error:', err.message);
+  });
+
+  this.socket.on('disconnect', reason => {
+    console.log(`Socket disconnected: ${reason}`);
+  });
+
+  this.socket.connect();
+}
+
 
   disconnect() {
     if (this.socket) {
