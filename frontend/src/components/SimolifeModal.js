@@ -4,7 +4,7 @@ export default function SimolifeModal({ open, onAccept, onDecline }) {
   if (!open) return null;
   return (
     <div className="fixed z-50 inset-0 bg-black/70 flex items-center justify-center">
-      <div className="bg-darkgreen p-8 rounded-xl border-4 border-lime flex flex-col items-center shadow-xl max-w-sm w-full">
+      <div className="bg-darkgreen p-8 rounded-xl border-2 border-lime flex flex-col items-center shadow-xl max-w-sm w-full">
         <h2 className="text-2xl font-bold text-lime mb-2">Simolife Video Chat</h2>
         <p className="text-lg text-white mb-6 text-center">
           Would you like to start a random video chat and meet other users right now?
