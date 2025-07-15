@@ -3,7 +3,7 @@ const jwt = require('jsonwebtoken');
 const Message = require('../models/Message');
 const router = express.Router();
 
-
+// Middleware zum Authentifizieren per JWT
 function authenticate(req, res, next) {
   const header = req.headers.authorization;
   if (!header) return res.status(401).json({ error: "No token, authorization denied" });
@@ -17,12 +17,13 @@ function authenticate(req, res, next) {
   }
 }
 
-
+// DELETE /api/messages/:id -- nur eigene Nachrichten dürfen gelöscht werden!
 router.delete('/:id', authenticate, async (req, res) => {
   try {
     const msg = await Message.findById(req.params.id);
     if (!msg) return res.status(404).json({ error: "Message not found" });
 
+    // Der eingeloggte User darf nur eigene Nachrichten löschen!
     if (String(msg.author) !== req.user.id) {
       return res.status(403).json({ error: "Not allowed to delete this message" });
     }
@@ -30,6 +31,7 @@ router.delete('/:id', authenticate, async (req, res) => {
     await msg.deleteOne();
     res.json({ success: true });
   } catch (err) {
+    console.error('Error in DELETE /api/messages/:id:', err);
     res.status(500).json({ error: "Server error" });
   }
 });
