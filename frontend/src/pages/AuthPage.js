@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-const API_URL = process.env.REACT_APP_API_URL || '';
+const API_URL = process.env.REACT_APP_API_URL;
 
 const Form = ({ isLogin, onToggle }) => {
     const [username, setUsername] = useState('');
@@ -23,7 +23,10 @@ const Form = ({ isLogin, onToggle }) => {
             let res;
             if (isLogin) {
                
-                res = await axios.post(`${API_URL}${endpoint}`, { username, password });
+                res = await axios.post(`${API_URL}${endpoint}`, { username, password }, {
+                        withCredentials: true
+                        });
+
             } else {
            
                 const formData = new FormData();
@@ -32,7 +35,8 @@ const Form = ({ isLogin, onToggle }) => {
                 if (profilePic) formData.append('profilePic', profilePic);
 
                 res = await axios.post(`${API_URL}${endpoint}`, formData, {
-                    headers: { 'Content-Type': 'multipart/form-data' }
+                    headers: { 'Content-Type': 'multipart/form-data',
+                    withCredentials: true }
                 });
             }
 
