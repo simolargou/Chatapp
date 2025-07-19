@@ -137,7 +137,7 @@ mongoose.connect(process.env.MONGO_URI)
 // ======= SOCKET.IO =======
 const io = new Server(server, {
   cors: {
-    origin: allowedOrigins,
+    origin: [process.env.DOMAIN, process.env.WDOMAIN],
     credentials: true,
     methods: ['GET', 'POST']
   }
