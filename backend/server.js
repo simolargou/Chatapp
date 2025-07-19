@@ -21,11 +21,11 @@ const allowedOrigins = [process.env.DOMAIN, process.env.WDOMAIN];
 
 app.use(cors({
   origin: (origin, callback) => {
-    
-    if (!origin) return callback(null, true);
+    if (!origin) return callback(null, true); 
     if (allowedOrigins.includes(origin)) {
       return callback(null, true);
     }
+    console.error('❌ Blocked by CORS:', origin);
     return callback(new Error('Not allowed by CORS'));
   },
   credentials: true
@@ -137,7 +137,7 @@ mongoose.connect(process.env.MONGO_URI)
 // ======= SOCKET.IO =======
 const io = new Server(server, {
   cors: {
-    origin: [process.env.DOMAIN, process.env.WDOMAIN],
+    origin: allowedOrigins,
     credentials: true,
     methods: ['GET', 'POST']
   }
@@ -424,7 +424,7 @@ io.on('connection', socket => {
     if (peer) peer.emit('simolife-ice', { from: socket.auth.user, candidate });
   });
 });
-
+console.log('✅ Allowed Origins:', allowedOrigins);
 // ======= SERVER START =======
 server.listen(process.env.PORT, '0.0.0.0', () => {
   console.log(`🚀 Server running on port ${process.env.PORT}`);
