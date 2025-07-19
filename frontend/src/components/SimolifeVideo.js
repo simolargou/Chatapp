@@ -114,7 +114,7 @@ export default function SimolifeVideo({ socket, currentUser, peer, onNext, onLea
           <span className="text-white mt-1 font-semibold">You</span>
         </div>
         <div className="flex flex-col items-center w-full">
-          <video ref={peerVideoRef} autoPlay playsInline className="w-full h-64 rounded-xl border-2 border-green-600 bg-black" />
+          <video ref={peerVideoRef} autoPlay playsInline className="w-full h-64 rounded-xl border-2 border-life bg-black" />
           <span className="text-white mt-1 font-semibold">Stranger</span>
         </div>
       </div>

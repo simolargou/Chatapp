@@ -4,22 +4,24 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        'darkgreen': '#084459',
-        'green': '#1f6a84',
-        'litegreen': '#22a4d2',
-        'lime': '#414d51ff',
-        'black': '#525ec9ff',
-        'white': '#ffffff',
-        'gray': '#737373',
+        'darkest': '#084459',
+        'darke': '#1f6a84',
+        'lite': '#bae8f8ff',
+        'litest': '#e9f3f7ff',
+        'black': '#06080bff',
+        'white': '#ffffffff',
+        'gray': '#9d9f9fff',
         'life': '#22ad45ff',
+        'blau': '#69b5f3ff',
+        'pastelblau': '#a0cae4ff',
       },
       fontFamily: {
         sans: ['Tektur', 'sans-serif'],
       },
       keyframes: {
         glow: {
-          '0%, 100%': { boxShadow: '0 0 10px rgba(34,197,94,0.7)' },
-          '50%': { boxShadow: '0 0 20px rgba(34,197,94,1)' },
+          '0%, 100%': { boxShadow: '0 0 10px rgba(12, 154, 248, 0.7)' },
+          '50%': { boxShadow: '0 0 20px rgba(198, 226, 255, 1)' },
         },
       },
       animation: {

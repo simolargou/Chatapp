@@ -244,8 +244,8 @@ export default function PrivateChatPage() {
     return (
       <div className="flex items-center justify-center h-screen bg-gray-100">
         <div className="flex flex-col items-center space-y-4 p-6 bg-white rounded-2xl shadow-md animate-pulse">
-          <div className="w-12 h-12 border-4 border-lime-500 border-t-transparent rounded-full animate-spin" />
-          <p className="text-lime-600 font-semibold text-lg">{toUsername} Loading...</p>
+          <div className="w-12 h-12 border-4 border-litest-500 border-t-transparent rounded-full animate-spin" />
+          <p className="text-litest-600 font-semibold text-lg">{toUsername} Loading...</p>
         </div>
       </div>
     );
@@ -253,7 +253,7 @@ export default function PrivateChatPage() {
 
   return (
     <div className="flex flex-col h-screen text-black bg-black">
-      <header className="p-4 bg-white flex items-center border-b-2 border-darkgreen">
+      <header className="p-4 bg-white flex items-center border-b-2 border-darkest">
         <Link to="/chat" className="p-2 mr-4 rounded-full hover:bg-black cursor-pointer">←</Link>
         <h1 className="text-xl font-bold">Chat with {toUsername}</h1>
         {callState === "idle" && (
@@ -305,7 +305,7 @@ export default function PrivateChatPage() {
             className={`mb-2 p-2 rounded-lg max-w-lg border-b-2
               ${msg.author === currentUser.username
                 ? ' text-life  ml-auto'
-                : ' text-litegreen'}`}
+                : ' text-lite'}`}
           >
             <p className="font-bold">{msg.author}</p>
             {msg.messageType === 'audio'
@@ -324,7 +324,7 @@ export default function PrivateChatPage() {
 
       <form
         onSubmit={handleSendText}
-        className="p-4 bg-white flex items-center gap-2 border-t-2 border-darkgreen"
+        className="p-4 bg-white flex items-center gap-2 border-t-2 border-darkest"
       >
         <input
           type="text"
@@ -335,7 +335,7 @@ export default function PrivateChatPage() {
         />
         <button
           type="submit"
-          className="bg-black text-white font-bold p-2 rounded-md hover:bg-lime"
+          className="bg-black text-white font-bold p-2 rounded-md hover:bg-litest"
         >
           Send
         </button>

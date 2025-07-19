@@ -138,37 +138,37 @@ export default function ChatPage() {
   const getProfilePic = (profilePic) => profilePic || defaultAvatar;
 
   return (
-    <div className="flex h-screen bg-darkgreen text-lime">
+    <div className="flex h-screen text-white ">
       <audio ref={audioRef} src="/sounds/notification.mp3" preload="auto" />
 
-      <aside className={`fixed inset-y-0 left-0 z-20 w-72 bg-black p-2 flex flex-col transform transition-transform duration-300 ease-in-out ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:relative md:translate-x-0 md:flex-shrink-0`}>
-        <div className="flex flex-col items-center pb-4 border-b border-litegreen">
-          <img src={getProfilePic(currentUser?.profilePic)} alt="My Profile" className="w-20 h-20 rounded-md border-2 border-lime object-cover shadow" />
+      <aside className={`fixed text-gray inset-y-0 left-0 z-20 w-72 bg-litest p-2 flex flex-col transform transition-transform duration-300 ease-in-out ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:relative md:translate-x-0 md:flex-shrink-0`}>
+        <div className="flex flex-col items-center pb-4 border-b border-lite">
+          <img src={getProfilePic(currentUser?.profilePic)} alt="My Profile" className="w-20 h-20 rounded-md border-2 border-litest object-cover shadow" />
           <div className="text-center">
-            <h2 className="text-xl font-bold">{currentUser?.username}</h2>
-            <p className="text-xs text-lime">You</p>
+            <h2 className="text-xl font-bold text-black">{currentUser?.username}</h2>
+            <p className="text-xs text-black">You</p>
           </div>
         </div>
         <div className="flex justify-between items-center text-center mb-2">
           <h2 className="text-lg">Now Online ({onlineUsers.length})</h2>
-          <button onClick={() => setSidebarOpen(false)} className="md:hidden border-2 rounded-full p-2 ml-2 mt-2">✕</button>
+          <button onClick={() => setSidebarOpen(false)} className="md:hidden border-2 hover:bg-pastelblau rounded-full p-2 ml-2 mt-2 ">✕</button>
         </div>
-        <ul className="flex-grow overflow-y-auto space-y-2 border-t border-litegreen pt-4">
+        <ul className="flex-grow overflow-y-auto space-y-2 border-t border-lite pt-4">
           {onlineUsers.filter(u => u.id !== currentUser.id).length === 0 && (
             <li className="text-center text-gray-400">No users online.</li>
           )}
           {onlineUsers.filter(u => u.id !== currentUser.id).map(u => (
             <li key={u.id} className="flex items-center gap-3 mb-2">
-              <img src={getProfilePic(u.profilePic)} alt="User" className="w-10 h-10 rounded-full border-2 border-litegreen object-cover" />
-              <Link to={`/chat/${u.username}`} className="flex-1 block text-lg rounded-md text-white text-center hover:bg-life animate-glow">
+              <img src={getProfilePic(u.profilePic)} alt="User" className="w-10 h-10 rounded-full border-2 border-lite object-cover" />
+              <Link to={`/chat/${u.username}`} className="flex-1 block text-lg bg-pastelblau rounded-md text-white text-center hover:bg-blau animate-glow">
                 {u.username}
               </Link>
             </li>
           ))}
         </ul>
-        <div className='flex-row flex mt-4'>
-          <h1 className='w-1/2 cursor-pointer'>Sign out</h1>
-          <button onClick={logout} className="w-1/2 p-2 bg-red-700 text-white font-bold py-2 rounded-full hover:bg-red-600">
+        <div className=' flex mt-4 border-t-2 p-2 items-center justify-center'>
+          
+          <button onClick={logout} className="w-1/2 p-4 bg-red-400 text-white font-bold py-2 rounded-full hover:bg-red-600">
             Out
           </button>
         </div>
@@ -179,8 +179,8 @@ export default function ChatPage() {
         <SimolifeVideo socket={socket} currentUser={currentUser} peer={simolifePeer} onNext={handleSimolifeNext} onLeave={handleSimolifeLeave} />
       )}
 
-      <main className="flex flex-1 flex-col bg-lime">
-        <div className="md:hidden h-20 flex items-center p-2 bg-green border-b-2 border-darkgreen relative">
+      <main className="flex flex-1 flex-col bg-gradient-to-r from-gray-50 to-slate-300">
+        <div className="md:hidden h-20 flex items-center p-2 bg-litest  relative">
           <div className="absolute left-4 top-1/2 -translate-y-1/2 flex items-center">
             <button onClick={() => setSidebarOpen(true)} className="mr-2 text-2xl">☰</button>
           </div>
@@ -189,17 +189,17 @@ export default function ChatPage() {
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-2">
+        <div className="flex-1 font-mono  overflow-y-auto p-2 bg-gradient-to-r from-litest to-white">
           {messages.map(msg => (
             <div key={msg._id} className={`flex w-full mb-2 ${msg.author?._id === currentUser.id ? 'justify-end' : 'justify-start'}`}>
               {msg.author?._id !== currentUser.id && (
-                <img src={getProfilePic(msg.author?.profilePic)} alt="Avatar" className="w-9 h-9 rounded-full border-2 border-litegreen object-cover mr-2 self-end" />
+                <img src={getProfilePic(msg.author?.profilePic)} alt="Avatar" className="w-9 h-9 rounded-full border-2 border-lite object-cover mr-2 self-end" />
               )}
-              <div className={`p-3 rounded-lg break-words ${msg.author?._id === currentUser.id ? 'bg-litegreen text-darkgreen text-right rounded-br-none' : 'bg-green text-lime text-left rounded-bl-none'} max-w-[70%] w-fit`}>
+              <div className={`p-3 rounded-lg break-words ${msg.author?._id === currentUser.id ? 'bg-lite text-black text-right rounded-br-none' : 'bg-white text-black text-left rounded-bl-none'} max-w-[70%] w-fit`}>
                 <p className="font-bold flex items-center gap-2">
                   {msg.author?.username || 'Unknown'}
                   {msg.author?._id === currentUser.id && (
-                    <img src={getProfilePic(currentUser?.profilePic)} alt="Me" className="w-7 h-7 rounded-full border border-litegreen object-cover ml-1 inline" />
+                    <img src={getProfilePic(currentUser?.profilePic)} alt="Me" className="w-7 h-7 rounded-full border border-lite object-cover ml-1 inline" />
                   )}
                 </p>
                 {msg.messageType === 'audio' ? <AudioPlayer src={msg.audioUrl} /> : <p>{msg.text}</p>}
@@ -213,16 +213,16 @@ export default function ChatPage() {
                 </div>
               </div>
               {msg.author?._id === currentUser.id && (
-                <img src={getProfilePic(currentUser?.profilePic)} alt="Me" className="w-9 h-9 rounded-full border-2 border-litegreen object-cover ml-2 self-end" />
+                <img src={getProfilePic(currentUser?.profilePic)} alt="Me" className="w-9 h-9 rounded-full border-2 border-lite object-cover ml-2 self-end" />
               )}
             </div>
           ))}
           <div ref={endRef} />
         </div>
 
-        <form onSubmit={sendText} className="flex items-center gap-2 p-4 bg-green border-t-2 border-darkgreen">
-          <input type="text" value={currentMessage} onChange={e => setCurrentMessage(e.target.value)} placeholder="Type a message…" className="flex-1 p-2 bg-darkgreen border border-litegreen rounded focus:outline-none" />
-          <button type="submit" className="px-4 py-2 bg-darkgreen text-white rounded hover:bg-life">Send</button>
+        <form onSubmit={sendText} className="flex items-center text-gray gap-2 p-4 bg-litest ">
+          <input type="text" value={currentMessage} onChange={e => setCurrentMessage(e.target.value)} placeholder="Type a message…" className="flex-1 p-2 bg-white   rounded focus:outline-none" />
+          <button type="submit" className="px-4 py-2 bg-gray text-white rounded hover:bg-blau">Send</button>
           <Recorder onSendAudio={sendAudio} />
         </form>
       </main>

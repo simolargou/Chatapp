@@ -50,18 +50,18 @@ const Form = ({ isLogin, onToggle }) => {
 
     return (
         <form onSubmit={handleSubmit} className="flex flex-col gap-4 ">
-            <h2 className="text-2xl font-bold text-lime text-center">{isLogin ? 'Login' : 'Register'}</h2>
-            <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="Username" required className="p-2 rounded bg-green border border-litegreen text-lime placeholder-lime focus:outline-none" />
-            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Password" required className="p-2 rounded bg-green border border-litegreen text-lime placeholder-lime focus:outline-none" />
+            <h2 className="text-2xl font-bold text-litest text-center">{isLogin ? 'Login' : 'Register'}</h2>
+            <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="Username" required className="p-2 rounded bg-darke border border-lite text-litest placeholder-litest focus:outline-none" />
+            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Password" required className="p-2 rounded bg-darke border border-lite text-litest placeholder-litest focus:outline-none" />
 
             {!isLogin && (
                 <div className="flex flex-col items-center my-2">
-                    <label htmlFor="profilePic" className="text-lime font-bold mb-1">
+                    <label htmlFor="profilePic" className="text-litest font-bold mb-1">
                     Profile Picture (optional)
                     </label>
                     <div className="flex items-center gap-4">
                     {/* Preview circle */}
-                    <div className="w-16 h-16 rounded-full border-2 border-litegreen flex items-center justify-center bg-slate-800 overflow-hidden">
+                    <div className="w-16 h-16 rounded-full border-2 border-lite flex items-center justify-center bg-slate-800 overflow-hidden">
                         {previewUrl ? (
                         <img src={previewUrl} alt="Preview" className="w-full h-full object-cover" />
                         ) : (
@@ -69,7 +69,7 @@ const Form = ({ isLogin, onToggle }) => {
                         )}
                     </div>
                     {/* Upload button */}
-                    <label className="bg-lime text-darkgreen px-3 py-1 rounded cursor-pointer font-bold hover:bg-litegreen transition">
+                    <label className="bg-litest text-darkest px-3 py-1 rounded cursor-pointer font-bold hover:bg-lite transition">
                         Profil picture
                         <input
                         id="profilePic"
@@ -83,9 +83,9 @@ const Form = ({ isLogin, onToggle }) => {
                 </div>
                 )}
 
-            <button type="submit" className="bg-litegreen text-darkgreen font-bold p-2 rounded hover:bg-lime">{isLogin ? 'Login' : 'Register'}</button>
-            {message.text && <p className={`text-center ${message.isError ? 'text-red-400' : 'text-lime'}`}>{message.text}</p>}
-            <p className="text-lime text-center">
+            <button type="submit" className="bg-lite text-darkest font-bold p-2 rounded hover:bg-litest">{isLogin ? 'Login' : 'Register'}</button>
+            {message.text && <p className={`text-center ${message.isError ? 'text-red-400' : 'text-litest'}`}>{message.text}</p>}
+            <p className="text-litest text-center">
                 {isLogin ? "No account?" : "Already have an account?"}{' '}
                 <button type="button" onClick={onToggle} className="font-bold underline">
                     {isLogin ? "Register here" : "Login here"}
@@ -99,7 +99,7 @@ const AuthPage = () => {
     const [isLogin, setIsLogin] = useState(true);
     return (
         <div className="flex items-center justify-center min-h-screen bg-gradient-to-b from-slate-600 via-gray-950 to-slate-900">
-            <div className="w-full max-w-md p-8 space-y-8  rounded-lg shadow-lg border-2 border-green">
+            <div className="w-full max-w-md p-8 space-y-8  rounded-lg shadow-lg border-2 border-darke">
                 <Form isLogin={isLogin} onToggle={() => setIsLogin(!isLogin)} />
             </div>
         </div>

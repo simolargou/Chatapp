@@ -18,7 +18,8 @@ const Message = require('./models/Message');
 const Conversation = require('./models/Conversation');
 
 const cors = require('cors');
-app.use(cors({ origin: 'https://dev.mykitool.com' })); 
+app.use(cors({ origin: 'http://www.simotest.de' })); 
+//app.use(cors({ origin: 'https://dev.mykitool.com' })); 
 
 app.use(express.json());
 
@@ -126,7 +127,7 @@ mongoose.connect(process.env.MONGO_URI)
 // ======= SOCKET.IO =======
 const io = new Server(server, {
   cors: {
-    origin: ['https://dev.mykitool.com', 'https://api.mykitool.com'],
+    origin: ['https://www.simotest.de', 'https://api.simotest.de'],
     credentials: true,
     methods: ['GET', 'POST'],
   }
