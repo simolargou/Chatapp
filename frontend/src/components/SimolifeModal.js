@@ -14,13 +14,13 @@ export default function SimolifeModal({ open, onAccept, onDecline }) {
             className="bg-life text-darkgreen px-5 py-2 rounded font-bold text-lg hover:bg-litegreen"
             onClick={onAccept}
           >
-            Yes!
+            Connect
           </button>
           <button
             className="bg-red-400 text-white px-5 py-2 rounded font-bold text-lg hover:bg-red-600"
             onClick={onDecline}
           >
-            No
+            out
           </button>
         </div>
       </div>
