@@ -124,14 +124,6 @@ export default function PrivateChatPage() {
       text,
       audioUrl
     });
-
-    setConversation(prev => ({
-      ...prev,
-      messages: [
-        ...prev.messages,
-        { author: currentUser.username, messageType, text, audioUrl, timestamp: new Date().toISOString() }
-      ]
-    }));
   };
 
   const handleSendText = e => {

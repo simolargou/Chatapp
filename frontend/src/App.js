@@ -4,7 +4,7 @@ import { socket } from './socket';
 import AuthPage from './pages/AuthPage';
 import ChatPage from './pages/ChatPage';
 import PrivateChatPage from './pages/PrivateChatPage';
-import CallHandler from './components/CallHandler';
+
 
 function App() {
   
@@ -37,7 +37,7 @@ function App() {
 
   return (
     <div className="bg-darkgreen min-h-screen">
-      {user && <CallHandler currentUser={user} />}
+      
       <Routes>
         <Route path="/auth" element={!token ? <AuthPage /> : <Navigate to="/chat" />} />
         <Route path="/chat" element={token ? <ChatPage onlineUsers={onlineUsers} /> : <Navigate to="/auth" />} />

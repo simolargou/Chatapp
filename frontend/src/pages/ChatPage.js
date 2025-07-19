@@ -8,6 +8,7 @@ import defaultAvatar from '../assets/avatar.png';
 import SimolifeModal from "../components/SimolifeModal";
 import SimolifeVideo from "../components/SimolifeVideo";
 import { useNavigate, useLocation } from 'react-router-dom';
+import CallHandler from '../components/CallHandler';
 
 export default function ChatPage() {
   const [messages, setMessages] = useState([]);
@@ -23,10 +24,27 @@ export default function ChatPage() {
   const [notification, setNotification] = useState(null);
   const navigate = useNavigate();
   const location = useLocation();
+  const sidebarRef = useRef(null);
 
+useEffect(() => {
+  const handleOutsideClick = (e) => {
+    if (
+      sidebarOpen &&
+      sidebarRef.current &&
+      !sidebarRef.current.contains(e.target)
+    ) {
+      setSidebarOpen(false);
+    }
+  };
+
+  document.addEventListener('mousedown', handleOutsideClick);
+  return () => document.removeEventListener('mousedown', handleOutsideClick);
+}, [sidebarOpen]);
+
+  
  useEffect(() => {
   socket.on('receivePrivateMessage', ({ conversationId, message }) => {
-    const currentChatUser = location.pathname.split('/')[2]; // e.g. /chat/simo
+    const currentChatUser = location.pathname.split('/')[2]; 
     if (message.author !== currentChatUser) {
       setNotification({
         from: message.author,
@@ -34,7 +52,7 @@ export default function ChatPage() {
         conversationId,
       });
 
-      // Optional: auto-hide after 5 seconds
+      
       setTimeout(() => setNotification(null), 5000);
     }
   });
@@ -160,21 +178,24 @@ export default function ChatPage() {
 
   return (
     <div className="flex h-screen text-white ">
+     {onlineUsers && <CallHandler currentUser={onlineUsers} />}
      {notification && (
-          <div className="fixed bottom-6 right-6 bg-white text-black p-4 shadow-lg rounded-lg z-50 border-l-4 border-life animate-slide-in">
+          <div className="fixed bottom-6 right-6 bg-white text-black p-4 shadow-lg rounded-lg z-50 border-l-4 border-blau animate-slide-in">
             <p className="font-bold">New message from {notification.from}</p>
             <p className="text-sm mb-2">{notification.text}</p>
             <button
-              className="text-life underline text-sm"
+              className="text-darkest underline text-sm"
               onClick={() => navigate(`/chat/${notification.from}`)}
             >
-              Open Chat
+              Open 
             </button>
           </div>
         )}
       <audio ref={audioRef} src="/sounds/notification.mp3" preload="auto" />
 
-      <aside className={`fixed text-gray inset-y-0 left-0 z-20 w-72 bg-litest p-2 flex flex-col transform transition-transform duration-300 ease-in-out ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:relative md:translate-x-0 md:flex-shrink-0`}>
+      <aside 
+       ref={sidebarRef}
+       className={`fixed text-gray inset-y-0 left-0 z-20 w-72 bg-litest p-2 flex flex-col transform transition-transform duration-300 ease-in-out ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:relative md:translate-x-0 md:flex-shrink-0`}>
         <div className="flex flex-col items-center pb-4 border-b border-lite">
           <img src={getProfilePic(currentUser?.profilePic)} alt="My Profile" className="w-20 h-20 rounded-md border-2 border-litest object-cover shadow" />
           <div className="text-center">
@@ -184,7 +205,7 @@ export default function ChatPage() {
         </div>
         <div className="flex justify-between items-center text-center mb-2">
           <h2 className="text-lg">Now Online ({onlineUsers.length})</h2>
-          <button onClick={() => setSidebarOpen(false)} className="md:hidden border-2 hover:bg-pastelblau rounded-full p-2 ml-2 mt-2 ">✕</button>
+          <button onClick={() => setSidebarOpen(false)} className="md:hidden  hover:bg-pastelblau  p-2 ml-2 mt-2 ">← Back</button>
         </div>
         <ul className="flex-grow overflow-y-auto space-y-2 border-t border-lite pt-4">
           {onlineUsers.filter(u => u.id !== currentUser.id).length === 0 && (
@@ -193,6 +214,7 @@ export default function ChatPage() {
           {onlineUsers.filter(u => u.id !== currentUser.id).map(u => (
             <li key={u.id} className="flex items-center gap-3 mb-2">
               <img src={getProfilePic(u.profilePic)} alt="User" className="w-10 h-10 rounded-full border-2 border-lite object-cover" />
+              {notification && (<div className='bg-life rounded-full w-2 h-2'></div> )}
               <Link to={`/chat/${u.username}`} className="flex-1 block text-lg bg-pastelblau rounded-md text-white text-center hover:bg-blau animate-glow">
                 {u.username}
               </Link>
