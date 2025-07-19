@@ -251,6 +251,41 @@ io.on('connection', socket => {
       matchSimolifeSocket(socket);
     }, 2000);
   });
+    socket.on('startPrivateChat', async ({ fromUserId, toUsername }) => {
+        try {
+          const fromUser = await User.findById(fromUserId);
+          const toUser = await User.findOne({ username: toUsername });
+
+          if (!fromUser || !toUser) {
+            return socket.emit('privateChatError', { error: 'User not found' });
+          }
+
+          let conversation = await Conversation.findOne({
+            participants: { $all: [fromUser._id, toUser._id], $size: 2 }
+          }).populate({
+            path: 'messages',
+            options: { sort: { timestamp: 1 } }
+          });
+
+          if (!conversation) {
+            conversation = new Conversation({ participants: [fromUser._id, toUser._id], messages: [] });
+            await conversation.save();
+          }
+
+          const messages = await Message.find({ conversation: conversation._id }).sort({ timestamp: 1 });
+          const convoData = {
+            _id: conversation._id,
+            participants: [fromUser, toUser],
+            messages
+          };
+
+          socket.emit('privateChatStarted', convoData);
+
+        } catch (err) {
+          console.error('Private chat error:', err);
+          socket.emit('privateChatError', { error: 'Server error' });
+        }
+      });
 
   socket.on('simolife-offer', ({ to, offer }) => {
     const peer = getSocketByUserId(to.id);

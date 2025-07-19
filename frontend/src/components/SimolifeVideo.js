@@ -95,7 +95,7 @@ export default function SimolifeVideo({ socket, currentUser, peer, onNext, onLea
       pcRef.current = null;
       if (peerVideoRef.current) peerVideoRef.current.srcObject = null;
     };
-  }, [peer]);
+  }, [peer, currentUser.id, socket]);
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-90 flex flex-col items-center justify-center z-50">
@@ -110,8 +110,8 @@ export default function SimolifeVideo({ socket, currentUser, peer, onNext, onLea
         </div>
       </div>
       <div className="mt-6 flex gap-4">
-        <button onClick={onNext} className="px-6 py-2 rounded-xl bg-blue-600 text-white font-bold">Next</button>
-        <button onClick={onLeave} className="px-6 py-2 rounded-xl bg-red-600 text-white font-bold">Leave</button>
+        <button onClick={onNext} className="px-6 py-2 rounded-xl bg-life text-white font-bold">Next</button>
+        <button onClick={onLeave} className="px-6 py-2 rounded-xl bg-red-400 text-white font-bold">Leave</button>
       </div>
     </div>
   );
