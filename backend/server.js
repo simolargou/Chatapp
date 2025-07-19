@@ -17,7 +17,7 @@ const User = require('./models/User');
 const Message = require('./models/Message');
 const Conversation = require('./models/Conversation');
 const cors = require('cors');
-const allowedOrigins = ['http://localhost:3000', 'http://www.simotest.de'];
+const allowedOrigins = [process.env.DOMAIN, process.env.WDOMAIN];
 
 app.use(cors({
   origin: (origin, callback) => {
@@ -137,9 +137,9 @@ mongoose.connect(process.env.MONGO_URI)
 // ======= SOCKET.IO =======
 const io = new Server(server, {
   cors: {
-    origin: ['http://localhost:3000', 'https://www.simotest.de'],
+    origin: allowedOrigins,
     credentials: true,
-    methods: ['GET', 'POST'],
+    methods: ['GET', 'POST']
   }
 });
 
