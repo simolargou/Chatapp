@@ -252,10 +252,10 @@ export default function PrivateChatPage() {
   }
 
   return (
-    <div className="flex flex-col h-screen text-black bg-black">
-      <header className="p-4 bg-white flex items-center border-b-2 border-darkest">
-        <Link to="/chat" className="p-2 mr-4 rounded-full hover:bg-black cursor-pointer">←</Link>
-        <h1 className="text-xl font-bold">Chat with {toUsername}</h1>
+    <div className="flex flex-col h-screen text-darkest bg-lite">
+      <header className="p-4 bg-white flex items-center  border-darkest">
+        <Link to="/chat" className="p-2 mr-4  rounded-full hover:bg-black cursor-pointer">←</Link>
+        <h1 className="text-xl font-bold">{toUsername}</h1>
         {callState === "idle" && (
           <button
             className="ml-auto px-3 py-1  text-white rounded "
@@ -302,10 +302,10 @@ export default function PrivateChatPage() {
         {conversation.messages.map((msg, idx) => (
           <div
             key={idx}
-            className={`mb-2 p-2 rounded-lg max-w-lg border-b-2
+            className={`mb-2 p-2 rounded-lg max-w-lg bg-white
               ${msg.author === currentUser.username
-                ? ' text-life  ml-auto'
-                : ' text-lite'}`}
+                ? ' text-black  ml-auto'
+                : ' text-black '}`}
           >
             <p className="font-bold">{msg.author}</p>
             {msg.messageType === 'audio'
@@ -324,18 +324,18 @@ export default function PrivateChatPage() {
 
       <form
         onSubmit={handleSendText}
-        className="p-4 bg-white flex items-center gap-2 border-t-2 border-darkest"
+        className="p-4 bg-litest flex items-center gap-2 "
       >
         <input
           type="text"
           value={currentMessage}
           onChange={e => setCurrentMessage(e.target.value)}
           placeholder="Type a message..."
-          className="flex-grow p-2 bg-black border text-white border-gray rounded focus:outline-none"
+          className="flex-grow p-2 bg-white border text-black border-gray rounded focus:outline-none"
         />
         <button
           type="submit"
-          className="bg-black text-white font-bold p-2 rounded-md hover:bg-litest"
+          className="bg-blau text-white font-bold p-2 rounded-md hover:bg-litest"
         >
           Send
         </button>

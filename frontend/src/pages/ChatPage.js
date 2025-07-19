@@ -182,7 +182,7 @@ export default function ChatPage() {
       <main className="flex flex-1 flex-col bg-gradient-to-r from-gray-50 to-slate-300">
         <div className="md:hidden h-20 flex items-center p-2 bg-litest  relative">
           <div className="absolute left-4 top-1/2 -translate-y-1/2 flex items-center">
-            <button onClick={() => setSidebarOpen(true)} className="mr-2 text-2xl">☰</button>
+            <button onClick={() => setSidebarOpen(true)} className="mr-2 text-2xl text-pastelblau">☰</button>
           </div>
           <div className="flex-1 flex justify-center items-center">
             <img src={logo} alt="XChat Logo" width={100} height={100} />
