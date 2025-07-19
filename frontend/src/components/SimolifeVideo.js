@@ -28,7 +28,16 @@ export default function SimolifeVideo({ socket, currentUser, peer, onNext, onLea
   useEffect(() => {
     if (!peer || !peer.id || !myStream.current) return;
 
-    const pc = new RTCPeerConnection({ iceServers: [{ urls: "stun:stun.l.google.com:19302" }] });
+    const pc = new RTCPeerConnection({
+      iceServers: [
+        { urls: "stun:stun.l.google.com:19302" },
+        { urls: "stun:stun1.l.google.com:19302" },
+        { urls: "stun:stun2.l.google.com:19302" },
+        { urls: "stun:stun.stunprotocol.org:3478" },
+        { urls: "stun:stun.sipgate.net" }
+      ]
+    });
+
     pcRef.current = pc;
 
     myStream.current.getTracks().forEach(track => pc.addTrack(track, myStream.current));

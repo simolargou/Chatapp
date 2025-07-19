@@ -8,7 +8,7 @@ module.exports = {
         'green': '#1f6a84',
         'litegreen': '#22a4d2',
         'lime': '#8bdbf7',
-        'black': '#000000',
+        'black': '#0c1889ff',
         'white': '#ffffff',
         'gray': '#737373',
         'life': '#22ad45ff',
