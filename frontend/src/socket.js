@@ -1,4 +1,4 @@
-// src/socket.js
+
 import { io } from 'socket.io-client';
 
 const URL = process.env.REACT_APP_API_URL;
@@ -7,10 +7,11 @@ class SocketService {
   socket = null;
 
   connect(user) {
-    if (!user) return;
-
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    
     if (this.socket) {
-      this.socket.auth = { user };
+      this.socket.auth = { token };;
 
       if (!this.socket.connected) {
         this.registerCoreEvents(user); 
@@ -23,7 +24,7 @@ class SocketService {
     this.socket = io(URL, {
       autoConnect: false,
       transports: ['websocket'],
-      auth: { user }
+      auth: { token }
     });
 
     this.registerCoreEvents(user);
@@ -68,7 +69,7 @@ class SocketService {
     if (cb) {
       this.socket.off(evt, cb);
     } else {
-      this.socket.off(evt); // remove all listeners for event
+      this.socket.off(evt); 
     }
   }
 
@@ -80,7 +81,7 @@ class SocketService {
     }
   }
 
-  // Optional: add reusable default listeners here if needed
+ 
   registerCoreEvents(user) {
     this.on('userOnline', (u) => {
       console.log("🟢 Online:", u?.username);

@@ -6,13 +6,12 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 
-// Create the profile-pics upload folder if it doesn't exist
 const profilePicsDir = path.join(__dirname, '../uploads/profile-pics');
 if (!fs.existsSync(profilePicsDir)) {
     fs.mkdirSync(profilePicsDir, { recursive: true });
 }
 
-// Multer storage config
+
 const storage = multer.diskStorage({
     destination: (req, file, cb) => cb(null, profilePicsDir),
     filename: (req, file, cb) => {
@@ -22,7 +21,6 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
-// --- REGISTER ---
 router.post('/register', upload.single('profilePic'), async (req, res) => {
     const { username, password } = req.body;
     try {
@@ -41,7 +39,6 @@ router.post('/register', upload.single('profilePic'), async (req, res) => {
     }
 });
 
-// --- LOGIN ---
 router.post('/login', async (req, res) => {
     const { username, password } = req.body;
     try {

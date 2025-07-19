@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { socket } from '../socket';
 import { useNavigate } from 'react-router-dom';
-import defaultAvatar from '../assets/avatar.png'; // ✅ fallback
+import defaultAvatar from '../assets/avatar.png'; 
 
 export default function CallHandler({ currentUser }) {
   const [incomingCall, setIncomingCall] = useState(null);
@@ -23,8 +23,12 @@ export default function CallHandler({ currentUser }) {
 
   useEffect(() => {
     if (incomingCall) {
+      if (navigator.vibrate) {
+        navigator.vibrate([300, 100, 300, 100]); 
+      }  
       ringtoneRef.current?.play().catch(err => console.warn("🔇 Autoplay blockiert:", err));
     } else {
+      navigator.vibrate(0); 
       ringtoneRef.current?.pause();
       ringtoneRef.current.currentTime = 0;
     }
@@ -45,12 +49,12 @@ export default function CallHandler({ currentUser }) {
     <>
       <audio ref={ringtoneRef} src="/ringtone.mp3" loop preload="auto" />
       {incomingCall && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70">
-          <div className="bg-white p-8 rounded-lg shadow-lg flex flex-col items-center animate-bounce">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-pastelblau bg-opacity-70">
+          <div className="bg-white p-8 rounded-lg shadow-xl flex flex-col items-center ">
             <img
               src={getProfilePic(incomingCall.from.profilePic)}
               alt="Caller"
-              className="w-20 h-20 rounded-full border-4 border-green-400 mb-4 object-cover shadow-md"
+              className="w-40 h-40  border-4  mb-4 object-cover shadow-md"
             />
             <p className="mb-4 text-lg font-bold">
               📞 Incoming call from {incomingCall.from.username}

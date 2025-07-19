@@ -5,7 +5,7 @@ export default function SimolifeModal({ open, onAccept, onDecline }) {
   return (
     <div className="fixed z-50 inset-0 bg-black/70 flex items-center justify-center">
       <div className="bg-white p-4 rounded-lg border-2 border-litest flex flex-col items-center shadow-xl max-w-sm w-full">
-        <h2 className="text-2xl font-bold text-black mb-2">X Video Chat</h2>
+        <h2 className="text-2xl font-bold text-black mb-2">Random Chat</h2>
         <p className="text-lg text-black mb-6 text-center">
           you ll be connected with a random user:
         </p>

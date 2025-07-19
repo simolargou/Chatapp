@@ -16,10 +16,20 @@ console.log('🛠️  Using MONGO_URI:', process.env.MONGO_URI);
 const User = require('./models/User');
 const Message = require('./models/Message');
 const Conversation = require('./models/Conversation');
-
 const cors = require('cors');
-app.use(cors({ origin: 'http://www.simotest.de' })); 
-//app.use(cors({ origin: 'https://dev.mykitool.com' })); 
+const allowedOrigins = ['http://localhost:3000', 'http://www.simotest.de'];
+
+app.use(cors({
+  origin: (origin, callback) => {
+    
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    return callback(new Error('Not allowed by CORS'));
+  },
+  credentials: true
+}));
 
 app.use(express.json());
 
@@ -127,7 +137,7 @@ mongoose.connect(process.env.MONGO_URI)
 // ======= SOCKET.IO =======
 const io = new Server(server, {
   cors: {
-    origin: ['https://www.simotest.de', 'https://api.simotest.de'],
+    origin: ['http://localhost:3000', 'https://www.simotest.de'],
     credentials: true,
     methods: ['GET', 'POST'],
   }
@@ -161,6 +171,27 @@ function matchSimolifeSocket(socket) {
     socket.emit("simolife-matched", { peer: null });
   }
 }
+io.use(async (socket, next) => {
+  try {
+    const token = socket.handshake.auth.token;
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    console.log("🧪 Decoded:", decoded);
+    const userId = decoded.user?.id;
+    if (!userId) return next(new Error("❌ No user ID in token"));
+
+    const user = await User.findById(userId).lean();
+
+    if (!user) return next(new Error("❌ User not found"));
+
+    socket.auth = { user };
+    next();
+  } catch (err) {
+    console.error("❌ Auth error:", err.message);
+    next(new Error("Unauthorized"));
+  }
+});
+
 
 io.on('connection', socket => {
   console.log('🔌 Socket connected:', socket.id);
@@ -229,7 +260,7 @@ io.on('connection', socket => {
 
         const populatedMessage = await msg.populate('author', 'username');
 
-        // Nachricht an beide Teilnehmer senden
+       
         for (const participantId of convo.participants) {
           const targetSocket = getSocketByUserId(participantId.toString());
           if (targetSocket) {
@@ -254,6 +285,10 @@ io.on('connection', socket => {
     if (targetUser) {
       const peerSocket = io.sockets.sockets.get(targetUser.socketId);
       if (peerSocket) {
+        const from = {
+          username: socket.auth.user.username,
+          profilePic: socket.auth.user.profilePic
+        };
         peerSocket.emit('audio-call-offer', { from, offer });
       }
     }
