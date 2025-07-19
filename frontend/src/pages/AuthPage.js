@@ -22,10 +22,10 @@ const Form = ({ isLogin, onToggle }) => {
         try {
             let res;
             if (isLogin) {
-                // Login: send as JSON
+               
                 res = await axios.post(`${API_URL}${endpoint}`, { username, password });
             } else {
-                // Register: use FormData for file upload
+           
                 const formData = new FormData();
                 formData.append('username', username);
                 formData.append('password', password);

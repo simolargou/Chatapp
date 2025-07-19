@@ -1,49 +1,54 @@
 // src/socket.js
-
 import { io } from 'socket.io-client';
 
-// Default to localhost for dev, but use env for prod
-const URL = process.env.REACT_APP_API_URL ;
+const URL = process.env.REACT_APP_API_URL;
 
 class SocketService {
   socket = null;
 
   connect(user) {
-  // Only reconnect if already connected
-  if (this.socket && this.socket.connected) return;
-  if (this.socket && !this.socket.connected) {
-    this.socket.auth = { user }; // ⬅️ setze es explizit vor reconnect
-    this.socket.connect();
-    return;
+    if (!user) return;
+
+    // Wenn Socket bereits initialisiert
+    if (this.socket) {
+      this.socket.auth = { user };
+      if (!this.socket.connected) {
+        this.registerCoreEvents(user); // 🔁 wichtig bei reconnect
+        this.socket.connect();
+      }
+      return;
+    }
+
+    console.log("⚙️ Connecting socket to", URL);
+
+    this.socket = io(URL, {
+      autoConnect: false,
+      transports: ['websocket'],
+    });
+
+    this.socket.auth = { user };
+    this.registerCoreEvents(user); // Events binden
+    this.socket.connect();         // Verbindung starten
   }
 
-  console.log("⚙️ Connecting socket to", URL);
-  this.socket = io(URL, {
-    autoConnect: false,
-    transports: ['websocket'],
-  });
-  this.socket.auth = { user }; // ⬅️ HIER!
+  registerCoreEvents(user) {
+    this.socket.on('connect', () => {
+      console.log(`✅ Socket connected. ID: ${this.socket.id}`);
+      this.emit('userOnline', user); // wichtig!
+    });
 
-  this.socket.on('connect', () => {
-    console.log(`Socket connected. ID: ${this.socket.id}`);
-    this.emit('userOnline', user);
-  });
+    this.socket.on('connect_error', err => {
+      console.error('❌ Socket connect_error:', err.message);
+    });
 
-  this.socket.on('connect_error', err => {
-    console.error('Socket connect_error:', err.message);
-  });
-
-  this.socket.on('disconnect', reason => {
-    console.log(`Socket disconnected: ${reason}`);
-  });
-
-  this.socket.connect();
-}
-
+    this.socket.on('disconnect', reason => {
+      console.log(`🔌 Socket disconnected: ${reason}`);
+    });
+  }
 
   disconnect() {
     if (this.socket) {
-      console.log("Disconnecting socket");
+      console.log("🛑 Disconnecting socket");
       this.socket.disconnect();
       this.socket = null;
     }
@@ -61,10 +66,9 @@ class SocketService {
 
   emit(evt, data) {
     if (!this.socket) return;
-    console.log(`emit '${evt}':`, data);
+    console.log(`📤 emit '${evt}':`, data);
     this.socket.emit(evt, data);
   }
 }
 
-// Export as singleton
 export const socket = new SocketService();

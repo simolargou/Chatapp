@@ -12,22 +12,23 @@ export default function PrivateChatPage() {
   const [currentMessage, setCurrentMessage] = useState('');
   const messagesEndRef = useRef(null);
 
-  // === AUDIO CALL STATE ===
-  const [callState, setCallState] = useState("idle"); // idle | calling | ringing | in-call
+ 
+  const [callState, setCallState] = useState("idle"); 
   const [incomingCaller, setIncomingCaller] = useState(null);
   const [remoteStream, setRemoteStream] = useState(null);
   const localStreamRef = useRef(null);
   const peerConnectionRef = useRef(null);
-
-  // ==== SIGNALING HANDLERS (Socket.IO) ====
+ 
   useEffect(() => {
     if (!currentUser?.id) return;
 
     socket.connect(currentUser);
-    socket.emit('startPrivateChat', {
-      fromUserId: currentUser.id,
-      toUsername
-    });
+     socket.onceConnected(() => {
+        socket.emit('startPrivateChat', {
+          fromUserId: currentUser.id,
+          toUsername
+        });
+     });
 
     const handleStarted = (convo) => {
       setConversation(convo);
@@ -40,14 +41,14 @@ export default function PrivateChatPage() {
     socket.on('privateChatStarted', handleStarted);
     socket.on('privateChatError', handleError);
 
-    // ---- AUDIO CALL: Incoming offer ----
+  
     socket.on('audio-call-offer', async ({ from, offer }) => {
       setIncomingCaller(from);
       setCallState("ringing");
-      window.offerData = offer; // For acceptCall
+      window.offerData = offer; 
     });
 
-    // ---- AUDIO CALL: Incoming answer ----
+   
     socket.on('audio-call-answer', async ({ answer }) => {
       if (peerConnectionRef.current) {
         await peerConnectionRef.current.setRemoteDescription(answer);
@@ -55,18 +56,18 @@ export default function PrivateChatPage() {
       }
     });
 
-    // ---- AUDIO CALL: Incoming ICE ----
+ 
     socket.on('audio-call-ice', async ({ candidate }) => {
       if (peerConnectionRef.current && candidate) {
         try {
           await peerConnectionRef.current.addIceCandidate(candidate);
         } catch (err) {
-          // Ignore duplicates
+ 
         }
       }
     });
 
-    // ---- AUDIO CALL: Ended ----
+ 
     socket.on('audio-call-ended', () => {
       cleanupCall();
     });
@@ -79,7 +80,7 @@ export default function PrivateChatPage() {
       socket.off('audio-call-ice');
       socket.off('audio-call-ended');
     };
-    // eslint-disable-next-line
+ 
   }, [toUsername, currentUser, navigate]);
 
   useEffect(() => {
@@ -102,7 +103,7 @@ export default function PrivateChatPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [conversation?.messages]);
 
-  // ==== CHAT MESSAGE SENDING ====
+ 
   const sendMessage = ({ messageType, text, audioUrl }) => {
     if (!conversation) return;
     socket.emit('sendPrivateMessage', {
@@ -130,25 +131,25 @@ export default function PrivateChatPage() {
   };
   const handleSendAudio = audioUrl => sendMessage({ messageType: 'audio', text: null, audioUrl });
 
-  // ==== AUDIO CALL LOGIC ====
+  
   const startCall = async () => {
     setCallState("calling");
-    // 1. Get local audio
+   
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     localStreamRef.current = stream;
 
-    // 2. Create PeerConnection
+ 
     const pc = createPeerConnection();
     peerConnectionRef.current = pc;
 
-    // 3. Add audio track
+    
     stream.getTracks().forEach(track => pc.addTrack(track, stream));
 
-    // 4. Create offer
+   
     const offer = await pc.createOffer();
     await pc.setLocalDescription(offer);
 
-    // 5. Send offer via Socket.IO
+ 
     socket.emit('audio-call-offer', {
       to: toUsername,
       offer,
@@ -156,10 +157,10 @@ export default function PrivateChatPage() {
     });
   };
 
-  // Accept incoming call
+  
   const acceptCall = async () => {
     setCallState("in-call");
-    // 1. Get local audio
+ 
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     localStreamRef.current = stream;
 
