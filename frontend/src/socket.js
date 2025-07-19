@@ -1,19 +1,25 @@
-// src/socket.js
+
 import { io } from 'socket.io-client';
 
 const URL = process.env.REACT_APP_API_URL;
 
 class SocketService {
   socket = null;
-
+    onceConnected(callback) {
+    if (this.socket?.connected) {
+      callback();
+    } else {
+      this.socket.once('connect', callback);
+    }
+  }
   connect(user) {
     if (!user) return;
 
-    // Wenn Socket bereits initialisiert
+
     if (this.socket) {
       this.socket.auth = { user };
       if (!this.socket.connected) {
-        this.registerCoreEvents(user); // 🔁 wichtig bei reconnect
+        this.registerCoreEvents(user);
         this.socket.connect();
       }
       return;
@@ -27,14 +33,14 @@ class SocketService {
     });
 
     this.socket.auth = { user };
-    this.registerCoreEvents(user); // Events binden
-    this.socket.connect();         // Verbindung starten
+    this.registerCoreEvents(user);
+    this.socket.connect();       
   }
 
   registerCoreEvents(user) {
     this.socket.on('connect', () => {
       console.log(`✅ Socket connected. ID: ${this.socket.id}`);
-      this.emit('userOnline', user); // wichtig!
+      this.emit('userOnline', user); 
     });
 
     this.socket.on('connect_error', err => {
