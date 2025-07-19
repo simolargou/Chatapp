@@ -1,4 +1,4 @@
-// ✅ FINAL - Vollständig korrigierte server.js für Simolife Videochat
+
 require('dotenv').config();
 const express = require('express');
 const http = require('http');
@@ -18,7 +18,7 @@ const Message = require('./models/Message');
 const Conversation = require('./models/Conversation');
 
 const cors = require('cors');
-app.use(cors({ origin: 'https://dev.mykitool.com' }));
+app.use(cors({ origin: 'https://dev.mykitool.com' })); 
 
 app.use(express.json());
 
