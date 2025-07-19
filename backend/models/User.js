@@ -4,11 +4,11 @@ const bcrypt = require('bcrypt');
 const UserSchema = new mongoose.Schema({
     username: { type: String, unique: true, required: true },
     password: { type: String, required: true },
-    profilePic: { type: String }, // Add this line
-    // ...other fields
+    profilePic: { type: String }, 
+    
 });
 
-// Password hashing middleware (if you have it)
+
 UserSchema.pre('save', async function (next) {
     if (!this.isModified('password')) return next();
     try {
@@ -20,7 +20,7 @@ UserSchema.pre('save', async function (next) {
     }
 });
 
-// Password comparison method (if you have it)
+
 UserSchema.methods.comparePassword = async function (candidatePassword) {
     return bcrypt.compare(candidatePassword, this.password);
 };

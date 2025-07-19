@@ -7,6 +7,7 @@ import logo from '../assets/logo.png';
 import defaultAvatar from '../assets/avatar.png';
 import SimolifeModal from "../components/SimolifeModal";
 import SimolifeVideo from "../components/SimolifeVideo";
+import { useNavigate, useLocation } from 'react-router-dom';
 
 export default function ChatPage() {
   const [messages, setMessages] = useState([]);
@@ -19,7 +20,27 @@ export default function ChatPage() {
   const [showSimolifeModal, setShowSimolifeModal] = useState(false);
   const [simolifeActive, setSimolifeActive] = useState(false);
   const [simolifePeer, setSimolifePeer] = useState(null);
+  const [notification, setNotification] = useState(null);
+  const navigate = useNavigate();
+  const location = useLocation();
 
+ useEffect(() => {
+  socket.on('receivePrivateMessage', ({ conversationId, message }) => {
+    const currentChatUser = location.pathname.split('/')[2]; // e.g. /chat/simo
+    if (message.author !== currentChatUser) {
+      setNotification({
+        from: message.author,
+        text: message.text,
+        conversationId,
+      });
+
+      // Optional: auto-hide after 5 seconds
+      setTimeout(() => setNotification(null), 5000);
+    }
+  });
+
+  return () => socket.off('receivePrivateMessage');
+}, [location.pathname]);
   useEffect(() => {
     if (!currentUser?.id) return;
 
@@ -139,6 +160,18 @@ export default function ChatPage() {
 
   return (
     <div className="flex h-screen text-white ">
+     {notification && (
+          <div className="fixed bottom-6 right-6 bg-white text-black p-4 shadow-lg rounded-lg z-50 border-l-4 border-life animate-slide-in">
+            <p className="font-bold">New message from {notification.from}</p>
+            <p className="text-sm mb-2">{notification.text}</p>
+            <button
+              className="text-life underline text-sm"
+              onClick={() => navigate(`/chat/${notification.from}`)}
+            >
+              Open Chat
+            </button>
+          </div>
+        )}
       <audio ref={audioRef} src="/sounds/notification.mp3" preload="auto" />
 
       <aside className={`fixed text-gray inset-y-0 left-0 z-20 w-72 bg-litest p-2 flex flex-col transform transition-transform duration-300 ease-in-out ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:relative md:translate-x-0 md:flex-shrink-0`}>

@@ -11,6 +11,7 @@ export default function PrivateChatPage() {
   const [conversation, setConversation] = useState(null);
   const [currentMessage, setCurrentMessage] = useState('');
   const messagesEndRef = useRef(null);
+  const ringtoneRef = useRef(null);
 
  
   const [callState, setCallState] = useState("idle"); 
@@ -82,6 +83,16 @@ export default function PrivateChatPage() {
     };
  
   }, [toUsername, currentUser, navigate]);
+ useEffect(() => {
+  const audio = ringtoneRef.current;
+
+  if (callState === "ringing" && audio) {
+    audio.play().catch(err => console.warn('Autoplay blockiert:', err));
+  } else if (audio) {
+    audio.pause();
+    audio.currentTime = 0;
+  }
+}, [callState, ringtoneRef.current]);
 
   useEffect(() => {
     const handlePm = ({ conversationId, message }) => {
@@ -285,6 +296,7 @@ export default function PrivateChatPage() {
             <button className="mb-2 px-4 py-2 bg-life text-white rounded" onClick={acceptCall}>Accept</button>
             <button className="px-4 py-2 bg-red-500 text-white rounded" onClick={declineCall}>Decline</button>
           </div>
+          <audio ref={ringtoneRef} src="/ringtone.mp3" loop hidden />
         </div>
       )}
 
@@ -305,9 +317,9 @@ export default function PrivateChatPage() {
             className={`mb-2 p-2 rounded-lg max-w-lg bg-white
               ${msg.author === currentUser.username
                 ? ' text-black  ml-auto'
-                : ' text-black '}`}
+                : ' text-darkest '}`}
           >
-            <p className="font-bold">{msg.author}</p>
+            <p className="font-bold">{msg.author?.username}</p>
             {msg.messageType === 'audio'
               ? <AudioPlayer src={msg.audioUrl} />
               : <p className="break-words">{msg.text}</p>

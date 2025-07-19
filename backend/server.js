@@ -206,9 +206,92 @@ io.on('connection', socket => {
     const populated = await saved.populate('author', 'username profilePic');
     io.emit('receivePublicMessage', populated);
   });
+ socket.on('sendPrivateMessage', async ({ conversationId, author, messageType, text, audioUrl }) => {
+      try {
+        const convo = await Conversation.findById(conversationId);
+        if (!convo) return;
+
+        const fromUser = await User.findOne({ username: author });
+        if (!fromUser) return;
+
+        const msg = new Message({
+          conversation: convo._id,
+          author: fromUser._id,
+          messageType,
+          text,
+          audioUrl,
+          timestamp: new Date(),
+        });
+        await msg.save();
+
+        convo.messages.push(msg._id);
+        await convo.save();
+
+        const populatedMessage = await msg.populate('author', 'username');
+
+        // Nachricht an beide Teilnehmer senden
+        for (const participantId of convo.participants) {
+          const targetSocket = getSocketByUserId(participantId.toString());
+          if (targetSocket) {
+            targetSocket.emit('receivePrivateMessage', {
+              conversationId: convo._id,
+              message: {
+                author: populatedMessage.author.username,
+                messageType,
+                text,
+                audioUrl,
+                timestamp: populatedMessage.timestamp,
+              }
+            });
+          }
+        }
+      } catch (err) {
+        console.error('sendPrivateMessage error:', err);
+      }
+    });
+  socket.on('audio-call-offer', ({ to, offer, from }) => {
+    const targetUser = Object.values(onlineUsers).find(u => u.username === to);
+    if (targetUser) {
+      const peerSocket = io.sockets.sockets.get(targetUser.socketId);
+      if (peerSocket) {
+        peerSocket.emit('audio-call-offer', { from, offer });
+      }
+    }
+  });
+
+  socket.on('audio-call-answer', ({ to, answer, from }) => {
+    const targetUser = Object.values(onlineUsers).find(u => u.username === to);
+    if (targetUser) {
+      const peerSocket = io.sockets.sockets.get(targetUser.socketId);
+      if (peerSocket) {
+        peerSocket.emit('audio-call-answer', { from, answer });
+      }
+    }
+  });
+
+  socket.on('audio-call-ice', ({ to, candidate, from }) => {
+    const targetUser = Object.values(onlineUsers).find(u => u.username === to);
+    if (targetUser) {
+      const peerSocket = io.sockets.sockets.get(targetUser.socketId);
+      if (peerSocket) {
+        peerSocket.emit('audio-call-ice', { from, candidate });
+      }
+    }
+  });
+
+  socket.on('audio-call-ended', ({ to, from }) => {
+    const targetUser = Object.values(onlineUsers).find(u => u.username === to);
+    if (targetUser) {
+      const peerSocket = io.sockets.sockets.get(targetUser.socketId);
+      if (peerSocket) {
+        peerSocket.emit('audio-call-ended', { from });
+      }
+    }
+  });
 
   // ======= SIMOLIFE =======
   socket.on('simolife-join', user => {
+  
     socket.auth = { user };
     socket.simolifeActive = true;
 
@@ -273,7 +356,10 @@ io.on('connection', socket => {
             await conversation.save();
           }
 
-          const messages = await Message.find({ conversation: conversation._id }).sort({ timestamp: 1 });
+          const messages = await Message.find({ conversation: conversation._id })
+              .sort({ timestamp: 1 })
+              .populate('author', 'username profilePic');
+
           const convoData = {
             _id: conversation._id,
             participants: [fromUser, toUser],
