@@ -18,8 +18,6 @@ const Message = require('./models/Message');
 const Conversation = require('./models/Conversation');
 const cors = require('cors');
 const allowedOrigins = [
-  'https://simotest.de',
-  'https://www.simotest.de',
   process.env.DOMAIN,
   process.env.WDOMAIN
 ].filter(Boolean);
