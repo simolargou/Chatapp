@@ -17,7 +17,12 @@ const User = require('./models/User');
 const Message = require('./models/Message');
 const Conversation = require('./models/Conversation');
 const cors = require('cors');
-const allowedOrigins = [process.env.DOMAIN, process.env.WDOMAIN];
+const allowedOrigins = [
+  'https://simotest.de',
+  'https://www.simotest.de',
+  process.env.DOMAIN,
+  process.env.WDOMAIN
+].filter(Boolean);
 
 app.use(cors({
   origin: (origin, callback) => {
@@ -25,12 +30,19 @@ app.use(cors({
     if (allowedOrigins.includes(origin)) {
       return callback(null, true);
     }
-    console.error('❌ Blocked by CORS:', origin);
     return callback(new Error('Not allowed by CORS'));
   },
   credentials: true
 }));
-
+app.options('*', cors({
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    return callback(new Error('Not allowed by CORS'));
+  },
+  credentials: true
+}));
 app.use(express.json());
 
 // ======= Uploads =======
