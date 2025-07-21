@@ -67,12 +67,6 @@ app.post('/api/upload/audio', audioUpload.single('audio'), (req, res) => {
 app.get('/ping', (_, res) => res.send('pong ✅'));
 app.get('/', (_, res) => res.send('Backend läuft!'));
 
-app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  next();
-});
 
 // ======= Auth Routes =======
 const jwt = require('jsonwebtoken');
@@ -139,7 +133,6 @@ mongoose.connect(process.env.MONGO_URI)
 const io = new Server(server, {
   cors: {
     origin: allowedOrigins,
-    credentials: true,
     methods: ['GET', 'POST']
   }
 });

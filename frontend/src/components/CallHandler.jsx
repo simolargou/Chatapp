@@ -8,31 +8,32 @@ export default function CallHandler({ currentUser }) {
   const ringtoneRef = useRef();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    if (!currentUser) return;
+useEffect(() => {
+  socket.on('audio-call-offer', ({ from, offer }) => {
+    setIncomingCall({ from, offer });
+  });
 
-    socket.on('audio-call-offer', ({ from, offer }) => {
-      setIncomingCall({ from, offer });
-      window.offerData = offer;
-    });
+  return () => socket.off('audio-call-offer');
+}, []);
 
-    return () => {
-      socket.off('audio-call-offer');
-    };
-  }, [currentUser]);
 
-  useEffect(() => {
-    if (incomingCall) {
-      if (navigator.vibrate) {
-        navigator.vibrate([300, 100, 300, 100]); 
-      }  
-      ringtoneRef.current?.play().catch(err => console.warn("🔇 Autoplay blockiert:", err));
-    } else {
-      navigator.vibrate(0); 
-      ringtoneRef.current?.pause();
-      ringtoneRef.current.currentTime = 0;
+ useEffect(() => {
+  if (incomingCall) {
+    if (typeof navigator.vibrate === 'function') {
+      navigator.vibrate([300, 100, 300, 100]);
     }
-  }, [incomingCall]);
+    ringtoneRef.current?.play().catch(err =>
+      console.warn("🔇 Autoplay blockiert:", err)
+    );
+  } else {
+    if (typeof navigator.vibrate === 'function') {
+      navigator.vibrate(0);
+    }
+    ringtoneRef.current?.pause();
+    ringtoneRef.current.currentTime = 0;
+  }
+}, [incomingCall]);
+
 
   const acceptCall = () => {
     navigate(`/chat/${incomingCall.from.username}`);
@@ -57,7 +58,7 @@ export default function CallHandler({ currentUser }) {
               className="w-40 h-40  border-4  mb-4 object-cover shadow-md"
             />
             <p className="mb-4 text-lg font-bold">
-              📞 Incoming call from {incomingCall.from.username}
+              📞 Incoming call from <strong>{incomingCall.from.username}</strong>
             </p>
             <button className="mb-2 px-4 py-2 bg-green-600 text-white rounded" onClick={acceptCall}>
               Accept

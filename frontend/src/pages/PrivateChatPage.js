@@ -281,16 +281,28 @@ export default function PrivateChatPage() {
       </header>
 
       {/* Incoming Call UI */}
-      {callState === "ringing" && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-70 z-50">
-          <div className="bg-white p-8 rounded-lg shadow-lg flex flex-col items-center animate-bounce">
-            <p className="mb-4 text-lg font-bold">Incoming call from {incomingCaller}</p>
-            <button className="mb-2 px-4 py-2 bg-life text-white rounded" onClick={acceptCall}>Accept</button>
-            <button className="px-4 py-2 bg-red-500 text-white rounded" onClick={declineCall}>Decline</button>
-          </div>
-          <audio ref={ringtoneRef} src="/ringtone.mp3" loop hidden />
-        </div>
-      )}
+      {callState === "ringing" && incomingCaller && (
+  <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-70 z-50">
+    <div className="bg-white p-8 rounded-lg shadow-lg flex flex-col items-center animate-bounce">
+      <img
+        src={incomingCaller.profilePic }
+        alt="caller"
+        className="w-24 h-24 rounded-full mb-4"
+      />
+      <p className="mb-4 text-lg font-bold">
+        Incoming call from <strong>{incomingCaller.username}</strong>
+      </p>
+      <button className="mb-2 px-4 py-2 bg-life text-white rounded" onClick={acceptCall}>
+        Accept
+      </button>
+      <button className="px-4 py-2 bg-red-500 text-white rounded" onClick={declineCall}>
+        Decline
+      </button>
+    </div>
+    <audio ref={ringtoneRef} src="/ringtone.mp3" loop hidden />
+  </div>
+)}
+
 
       {/* In-call audio element */}
       {callState === "in-call" && remoteStream && (
