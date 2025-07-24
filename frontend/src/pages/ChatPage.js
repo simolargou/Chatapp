@@ -22,10 +22,12 @@ export default function ChatPage() {
   const [simolifeActive, setSimolifeActive] = useState(false);
   const [simolifePeer, setSimolifePeer] = useState(null);
   const [notification, setNotification] = useState(null);
+  const [selectedImage, setSelectedImage] = useState(null);
+
   const navigate = useNavigate();
   const location = useLocation();
   const sidebarRef = useRef(null);
-
+  const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001';
 useEffect(() => {
   const handleOutsideClick = (e) => {
     if (
@@ -174,7 +176,8 @@ useEffect(() => {
     window.location.href = '/auth';
   };
 
-  const getProfilePic = (profilePic) => profilePic || defaultAvatar;
+const getProfilePic = (profilePic) =>
+  profilePic ? `${API_URL}${profilePic}` : defaultAvatar;
 
   return (
     <div className="flex h-screen text-white ">
@@ -192,12 +195,35 @@ useEffect(() => {
           </div>
         )}
       <audio ref={audioRef} src="/sounds/notification.mp3" preload="auto" />
+{selectedImage && (
+  <div className="fixed inset-0 z-50 bg-black bg-opacity-80 flex items-center justify-center">
+    <div className="relative max-w-full max-h-full">
+      <button
+        onClick={() => setSelectedImage(null)}
+        className="absolute top-2 right-2 text-white text-3xl font-bold hover:text-red-400"
+      >
+        ×
+      </button>
+      <img
+        src={selectedImage}
+        alt="Profile"
+        className="max-w-[90vw] max-h-[90vh] rounded-lg shadow-xl border-4 border-white object-contain"
+      />
+    </div>
+  </div>
+)}
 
       <aside 
        ref={sidebarRef}
        className={`fixed text-gray inset-y-0 left-0 z-20 w-72 bg-litest p-2 flex flex-col transform transition-transform duration-300 ease-in-out ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:relative md:translate-x-0 md:flex-shrink-0`}>
         <div className="flex flex-col items-center pb-4 border-b border-lite">
-          <img src={getProfilePic(currentUser?.profilePic)} alt="My Profile" className="w-20 h-20 rounded-md border-2 border-litest object-cover shadow" />
+          <img
+  src={getProfilePic(currentUser?.profilePic)}
+  alt="My Profile"
+  onClick={() => setSelectedImage(getProfilePic(currentUser?.profilePic))}
+  className="cursor-pointer w-20 h-20 rounded-md   object-cover shadow hover:scale-105 transition-transform"
+/>
+
           <div className="text-center">
             <h2 className="text-xl font-bold text-black">{currentUser?.username}</h2>
             <p className="text-xs text-black">You</p>
@@ -213,8 +239,14 @@ useEffect(() => {
           )}
           {onlineUsers.filter(u => u.id !== currentUser.id).map(u => (
             <li key={u.id} className="flex items-center gap-3 mb-2">
-              <img src={getProfilePic(u.profilePic)} alt="User" className="w-10 h-10 rounded-full border-2 border-lite object-cover" />
-              {notification && (<div className='bg-life rounded-full w-2 h-2'></div> )}
+              <img
+                src={getProfilePic(u.profilePic)}
+                alt="User"
+                onClick={() => setSelectedImage(getProfilePic(u.profilePic))}
+                className="w-10 h-10 rounded-full object-cover cursor-pointer hover:scale-110 transition-transform"
+              />
+
+               {notification && (<div className='bg-life rounded-full w-2 h-2'></div> )}
               <Link to={`/chat/${u.username}`} className="flex-1 block text-lg bg-pastelblau rounded-md text-white text-center hover:bg-blau animate-glow">
                 {u.username}
               </Link>

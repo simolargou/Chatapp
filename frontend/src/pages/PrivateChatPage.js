@@ -259,13 +259,15 @@ export default function PrivateChatPage() {
       <header className="p-4 bg-white flex items-center  border-darkest">
         <Link to="/chat" className="p-2 mr-4  rounded-full hover:bg-black cursor-pointer">←</Link>
         <h1 className="text-xl font-bold">{toUsername}</h1>
+        
         {callState === "idle" && (
           <button
-            className="ml-auto px-3 py-1  text-white rounded "
+            className="ml-auto px-3 py-1  text-red-600 animate-pulse"
             onClick={startCall}
           >
             📞 
           </button>
+          
         )}
         {callState === "calling" && (
           <span className="ml-auto text-blue-red-800">Calling...</span>

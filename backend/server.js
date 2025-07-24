@@ -24,14 +24,15 @@ const allowedOrigins = [
 
 app.use(cors({
   origin: (origin, callback) => {
-    if (!origin) return callback(null, true); 
-    if (allowedOrigins.includes(origin)) {
+    if (!origin || allowedOrigins.includes(origin)) {
       return callback(null, true);
     }
+    console.log(`❌ Blocked CORS origin: ${origin}`);
     return callback(new Error('Not allowed by CORS'));
   },
   credentials: true
 }));
+
 app.use(express.json());
 
 // ======= Uploads =======
@@ -58,7 +59,7 @@ const profilePicStorage = multer.diskStorage({
 const audioUpload = multer({ storage: audioStorage });
 const profilePicUpload = multer({ storage: profilePicStorage });
 
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/uploads', cors(), express.static(path.join(__dirname, 'uploads')));
 app.post('/api/upload/audio', audioUpload.single('audio'), (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No file uploaded.' });
   res.json({ audioUrl: `/uploads/${req.file.filename}` });
